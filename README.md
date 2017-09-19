@@ -16,20 +16,25 @@ time conversions will be based on the UTC of these values.
 1. Import the PowerShell Module 
 
 In a PowerShell window, run the following:
+
 ```ipmo Get-ADFSEvents.psm1```
 
 2. Run Get-ADFSEvents 
 
 EXAMPLE
+
 ```Get-ADFSEvents -Logs Security, Admin, Debug -CorrelationID 669bced6-d6ae-4e69-889b-09ceb8db78c9 -Servers LocalHost, MyServer```
 
 EXAMPLE
+
 ```Get-ADFSEvents -Logs Admin -AllWithHeaders -Servers LocalHost```
 
 EXAMPLE
+
 ```Get-ADFSEvents -Logs Debug, Security -AllWithoutHeaders -Servers LocalHost, Server1, Server2```
 
 Example
+
 ```Get-ADFSEvents -Logs Debug -StartTime $start -EndTime $End -server localhost```
 
 ## Get-ADFSEvents Parameters
