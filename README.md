@@ -2,7 +2,7 @@
 
 ## Get-ADFSEvents Overview
 
-This script gathers ADFS related events from the security, admin, and debug logs into a single file, 
+This script gathers ADFS related events from the security, admin, and debug logs, 
 and allows the user to reconstruct the HTTP request/response headers from the logs.
 
 Given a correlation id, the script will gather all events with the same identifier and reconstruct the request
@@ -11,31 +11,83 @@ all correlation ids and proceed to gather the events for each. If start and end 
 that fall into that span will be returned. The start and end times will be assumed to be base times. That is, all
 time conversions will be based on the UTC of these values.
 
+The output produced by Get-ADFSEvents is a list of objects with each containing the following properties:
+
+1. CorrelationID
+
+2. Events
+
+3. Headers
+
+The CorrelationID property contains a string representation of the correlation id that all events and headers within that object share.
+
+The Events property contains a list of [EventLogRecord](https://msdn.microsoft.com/en-us/library/system.diagnostics.eventing.reader.eventlogrecord)
+objects that share the particular correlation id.
+
+The Headers property contains a list of objects, each composed of the following properties:
+
+1.QueryString
+
+2.ResponseString
+
+3.RequestHeader
+
+4.ResponseHeader
+
+The QueryString property contains the HTTP verb (GET, POST, etc) and the corresponding query string.
+
+The ResponseString property contains the HTTP response string (ex. 200 ok)
+
+The RequestHeader property is a dictionary representing the various headers included in the HTTP request
+
+The ResponseHeader property is a dictionary representing the various headers included in the HTTP response
+
+As a final note, the output is, by default, merely dumped to the console to allow users to manipulate the objects returned. 
+While this will likely prove sufficient for many users, those who desire future access to the output should use ```Export-Clixml``` 
+to write the output to an xml file. ```Import-Clixml``` can then be used to reconstruct the objects from the file. Examples of both are 
+included in the Using Get-ADFSEvents section below.
+
 ## Using Get-ADFSEvents
 
 1. Import the PowerShell Module 
 
-In a PowerShell window, run the following:
+   In a PowerShell window, run the following:
 
-```ipmo Get-ADFSEvents.psm1```
+   ```ipmo Get-ADFSEvents.psm1```
 
 2. Run Get-ADFSEvents 
 
 EXAMPLE
 
-```Get-ADFSEvents -Logs Security, Admin, Debug -CorrelationID 669bced6-d6ae-4e69-889b-09ceb8db78c9 -Servers LocalHost, MyServer```
+```Get-ADFSEvents -Logs Security, Admin, Debug -CorrelationID 669bced6-d6ae-4e69-889b-09ceb8db78c9 -Server LocalHost, MyServer```
 
 EXAMPLE
 
-```Get-ADFSEvents -Logs Admin -AllWithHeaders -Servers LocalHost```
+```Get-ADFSEvents -Logs Admin -AllWithHeaders -Server LocalHost```
 
 EXAMPLE
 
-```Get-ADFSEvents -Logs Debug, Security -AllWithoutHeaders -Servers LocalHost, Server1, Server2```
+```Get-ADFSEvents -Logs Debug, Security -AllWithoutHeaders -Server LocalHost, Server1, Server2```
 
-Example
+EXAMPLE
 
-```Get-ADFSEvents -Logs Debug -StartTime $start -EndTime $End -server localhost```
+```Get-ADFSEvents -Logs Debug -StartTime (Get-Date -Date "1970-01-01 00:00:00Z") -EndTime (Get-Date) -Server localhost```
+
+EXAMPLE
+
+```$Result = Get-ADFSEvents -Logs Admin -AllWithHeaders -Server LocalHost```
+
+```$CorrelationID = $Result[0].CorrelationID #Obtain correlation id for first entry in output```
+
+```$Events = $Result[0].Events #List of EventLogRecord objects```
+
+```$QueryString = $Result[0].Headers[0].QueryString #Query String for first header in list```
+
+EXAMPLE
+
+```Get-ADFSEvents -Logs Security, Admin, Debug -AllWithHeaders -Server localhost | Export-Clixml "output.xml" #Store output in file```
+
+```$ReconstructedOutput = Import-Clixml output.xml #Rebuild objects from xml file```
 
 ## Get-ADFSEvents Parameters
 
