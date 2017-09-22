@@ -326,7 +326,43 @@ function AggregateOutputObject
     Write-Output $Output
 }
 
+function Write-ADFSEventsSummary
+{
+    #Create Table object
+    $table = New-Object system.Data.DataTable "SummaryTable"
 
+    #Define Columns
+    $col1 = New-Object system.Data.DataColumn Time,([string])
+    $col2 = New-Object system.Data.DataColumn EventID,([string])
+    $col3 = New-Object system.Data.DataColumn Details,([string])
+    $col4 = New-Object system.Data.DataColumn CorrelationID,([string])
+    $col5 = New-Object system.Data.DataColumn Machine,([string])
+    $col6 = New-Object system.Data.DataColumn Log,([string])
+    $table.columns.add( $col1 )
+    $table.columns.add( $col2 )
+    $table.columns.add( $col3 )
+    $table.columns.add( $col4 )
+    $table.columns.add( $col5 )
+    $table.columns.add( $col6 )
+
+    foreach($Event in $input.Events){
+        #Create a row
+        $row = $table.NewRow()
+
+        $row.Time = $Event.TimeCreated
+        $row.EventID = $Event.Id
+        $row.Details = $Event.Message
+        $row.CorrelationID = $Event.CorrelationID
+        $row.Machine = $Event.MachineName
+        $row.Log = $Event.LogName
+
+        #Add the row to the table
+        $table.Rows.Add($row)    
+
+    }
+
+    return $table
+}
 
 function Get-ADFSEvents
 {
@@ -359,9 +395,9 @@ function Get-ADFSEvents
     #Provide either correlation id, 'All' parameter, or time range along with logs to be queried and list of remote servers
     [CmdletBinding(DefaultParameterSetName='CorrelationIDParameterSet')]
     param(
-    [parameter(Mandatory=$true, Position=0)]
+    [parameter(Mandatory=$false, Position=0)]
     [ValidateSet("Admin", "Debug", "Security")]
-    [string[]]$Logs,
+    [string[]]$Logs = @("Security","Admin"),
 
     [parameter(Mandatory=$true, Position=1, ParameterSetName="CorrelationIDParameterSet")]
     [ValidateNotNullOrEmpty()]
@@ -379,8 +415,8 @@ function Get-ADFSEvents
     [parameter(Mandatory=$true, Position=2, ParameterSetName="AllEventsByTimeSet")]
     [DateTime]$EndTime,
 
-    [parameter(Mandatory=$true, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
-    [string[]]$Server
+    [parameter(Mandatory=$false, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
+    [string[]]$Server="LocalHost"
     )
 
     Begin
@@ -491,3 +527,4 @@ function Get-ADFSEvents
    
 }
 Export-ModuleMember -Function Get-ADFSEvents
+Export-ModuleMember -Function Write-ADFSEventsSummary

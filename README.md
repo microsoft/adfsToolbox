@@ -1,113 +1,229 @@
 # AD FS Log Tools
 
-## Get-ADFSEvents Overview
+## AdfsEventsModule Overview
 
-This script gathers ADFS related events from the security, admin, and debug logs, 
-and allows the user to reconstruct the HTTP request/response headers from the logs.
+This module provides tools for gathering related ADFS events from the security, admin, and debug logs, 
+across multiple servers. This tool also allows the user to reconstruct the HTTP request/response headers 
+from the logs.
 
-Given a correlation id, the script will gather all events with the same identifier and reconstruct the request
-and response headers if they exist. Using the 'All' option (either with or without headers enabled) will first collect
-all correlation ids and proceed to gather the events for each. If start and end times are provided, all events 
-that fall into that span will be returned. The start and end times will be assumed to be base times. That is, all
-time conversions will be based on the UTC of these values.
+## Cmdlets in AdfsEventsModule
+
+This module exposes two cmdlets: 
+
+__```Get-ADFSEvents```__
+
+and 
+
+__```Write-ADFSEventsSummary```__
+
+The detailed parameters for each are provided below.
+
+
+The ```Get-ADFSEvents``` cmdlet is used to aggregate events by correlation ID, while the ```Write-ADFSEventsSummary```
+cmdlet is used to generate a PowerShell Table of only the most relevant logging information from the events that are piped
+in. 
+
+## Get-ADFSEvents Parameters
+
+* __Logs__ - A list of AD FS logs to include in the aggregation. Current options are: "Admin", "Debug", "Security".
+The default will pull from both Security and Admin.
+* __CorrelationID__ - The correlation ID for a single request. This will aggregate all chosen logs for this request  
+* __AllWithoutHeaders__ - this flag will cause all requests to be grouped by correlation ID, but the HTTP headers 
+will not be extracted from the logs
+* __AllWithHeaders__ - this flag will cause all requests to be grouped by correlation ID, and the HTTP headers of 
+each request will be extracted from the logs 
+* __StartTime__ - the UTC start time to use when aggregating multiple requests. All requests that start after this 
+time will be aggregated
+* __EndTime__ - the UTC end time to use when aggregating multiple requests. All requests that end before this time
+will be aggregated
+* __Server__ - a comma-separated list of server names to pull logs from. 
+The default will pull from LocalHost
+
+## Get-ADFSEvents Output
 
 The output produced by Get-ADFSEvents is a list of objects with each containing the following properties:
 
-1. CorrelationID
+1.  __CorrelationID__
+2.  __Events__
+3.  __Headers__
 
-2. Events
+The __CorrelationID__ property contains a string representation of the Correlation ID that all events and headers within that object share.
 
-3. Headers
+The __Events__ property contains a list of [EventLogRecord](https://msdn.microsoft.com/en-us/library/system.diagnostics.eventing.reader.eventlogrecord)
+objects for the matching Correlation ID.
 
-The CorrelationID property contains a string representation of the correlation id that all events and headers within that object share.
+The __Headers__ property contains a list of objects, each containing of the following properties:
 
-The Events property contains a list of [EventLogRecord](https://msdn.microsoft.com/en-us/library/system.diagnostics.eventing.reader.eventlogrecord)
-objects that share the particular correlation id.
+1.  __QueryString__
+2.  __ResponseString__
+3.  __RequestHeader__
+4.  __ResponseHeader__
 
-The Headers property contains a list of objects, each composed of the following properties:
+The __QueryString__ property contains the HTTP verb (GET, POST, etc) and the corresponding query string.
 
-1.QueryString
+The __ResponseString__ property contains the HTTP response string (ex. 200 ok)
 
-2.ResponseString
+The __RequestHeader__ property is a dictionary containing the headers included in the HTTP request
 
-3.RequestHeader
+The __ResponseHeader__ property is a dictionary containing the headers included in the HTTP response
 
-4.ResponseHeader
-
-The QueryString property contains the HTTP verb (GET, POST, etc) and the corresponding query string.
-
-The ResponseString property contains the HTTP response string (ex. 200 ok)
-
-The RequestHeader property is a dictionary representing the various headers included in the HTTP request
-
-The ResponseHeader property is a dictionary representing the various headers included in the HTTP response
-
-As a final note, the output is, by default, merely dumped to the console to allow users to manipulate the objects returned. 
-While this will likely prove sufficient for many users, those who desire future access to the output should use ```Export-Clixml``` 
-to write the output to an xml file. ```Import-Clixml``` can then be used to reconstruct the objects from the file. Examples of both are 
-included in the Using Get-ADFSEvents section below.
 
 ## Using Get-ADFSEvents
 
 1. Import the PowerShell Module 
 
-   In a PowerShell window, run the following:
+    In a PowerShell window, run the following:
 
-   ```ipmo Get-ADFSEvents.psm1```
+    ```ipmo AdfsEventsModule.psm1```
 
-2. Run Get-ADFSEvents 
+2. Run Get-ADFSEvents with your desired parameters to get a list of PowerShell objects
 
-EXAMPLE
+    EXAMPLE: Retrieve all logs from two servers for a specific request
 
-```Get-ADFSEvents -Logs Security, Admin, Debug -CorrelationID 669bced6-d6ae-4e69-889b-09ceb8db78c9 -Server LocalHost, MyServer```
+    ```$logs = Get-ADFSEvents -Logs Security, Admin, Debug -CorrelationID 0c0fd6ee-4b1e-4260-0300-0080070000e3 -Server LocalHost, MyServer```
 
-EXAMPLE
+    OUTPUT:
 
-```Get-ADFSEvents -Logs Admin -AllWithHeaders -Server LocalHost```
+    ```
+    Events                              Headers CorrelationID
+    ------                              ------- -------------
 
-EXAMPLE
+    {EventLogRecord, EventLogRecord}    {}      0c0fd6ee-4b1e-4260-0300-0080070000e3
+    ```
 
-```Get-ADFSEvents -Logs Debug, Security -AllWithoutHeaders -Server LocalHost, Server1, Server2```
+3. To view specific records:
 
-EXAMPLE
+    ```$logs.Events[0]```
 
-```Get-ADFSEvents -Logs Debug -StartTime (Get-Date -Date "1970-01-01 00:00:00Z") -EndTime (Get-Date) -Server localhost```
+    OUTPUT:
 
-EXAMPLE
+    ```
+    Message         : An HTTP request was received. See audit 510 with the same Instance ID for headers.
 
-```$Result = Get-ADFSEvents -Logs Admin -AllWithHeaders -Server LocalHost```
+                       Instance ID: 64fb88c5-7f4e-4888-8b61-7d0d85563b82
 
-```$CorrelationID = $Result[0].CorrelationID #Obtain correlation id for first entry in output```
+                       Activity ID: 0c0fd6ee-4b1e-4260-0300-0080070000e3
 
-```$Events = $Result[0].Events #List of EventLogRecord objects```
+                       Request Details:
+                           Date And Time: 2017-09-19 20:50:43
+                           Client IP: 123.45.67.9
+                           HTTP Method: GET
+                           Url Absolute Path: /adfs/portal/logo/logo.png
+                           Query string: ?id=12345
+                           Local Port: 443
+                           Local IP: 123.45.67.8
+                           User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36
+                           Content Length: 0
+                           Caller Identity: -
+                           Certificate Identity (if any): -
+                           Targeted relying party: -
+                           Through proxy: False
+                           Proxy DNS name: -
+                       CorrelationID        : 0c0fd6ee-4b1e-4260-0300-0080070000e3
+                       PSComputerName       : LocalHost
+                       RunspaceId           : 6d3d7715-08db-4aa1-b299-40d51d5db682
+                       Id                   : 403
+                       Version              :
+                       Qualifiers           : 0
+                       Level                : 0
+                       Task                 : 3
+                       Opcode               :
+                       Keywords             : 12345
+                       RecordId             : 12345
+                       ProviderName         : AD FS Auditing
+                       ProviderId           :
+                       LogName              : Security
+                       ProcessId            :
+                       ThreadId             :
+                       MachineName          : contoso.com
+                       UserId               : 
+                       TimeCreated          : 9/19/2017 1:50:43 PM
+                       ActivityId           :
+                       RelatedActivityId    :
+                       ContainerLog         : security
+                       MatchedQueryIds      : {}
+                       Bookmark             : System.Diagnostics.Eventing.Reader.EventBookmark
+                       LevelDisplayName     : Information
+                       OpcodeDisplayName    : Info
+                       TaskDisplayName      :
+                       KeywordsDisplayNames : {Audit Success, Classic}
+                       Properties           : {}
+                       ```
 
-```$QueryString = $Result[0].Headers[0].QueryString #Query String for first header in list```
+4. You can pipe your output to ```Write-ADFSEventsSummary```
 
-EXAMPLE
+    EXAMPLE: 
 
-```Get-ADFSEvents -Logs Security, Admin, Debug -AllWithHeaders -Server localhost | Export-Clixml "output.xml" #Store output in file```
+    ```Get-ADFSEvents -Logs Security, Admin, Debug -CorrelationID 0c0fd6ee-4b1e-4260-0300-0080070000e3 -Server LocalHost, MyServer | Write-ADFSEventsSummary``` 
 
-```$ReconstructedOutput = Import-Clixml output.xml #Rebuild objects from xml file```
+    OUTPUT: 
 
-## Get-ADFSEvents Parameters
+    ```
+    Time          : 9/19/2017 1:50:43 PM
+    EventID       : 403
+    Details       : An HTTP request was received. See audit 510 with the same Instance ID for headers.
 
-* Logs - A list of AD FS logs to include in the aggregation. Current options are: "Admin", "Debug", "Security"
-* CorrelationID - The correlation ID for a single request. This will aggregate all chosen logs for this request  
-* AllWithoutHeaders - this flag will cause all requests to be grouped by correlation ID, but the HTTP headers 
-will not be extracted from the logs
-* AllWithHeaders - this flag will cause all requests to be grouped by correlation ID, and the HTTP headers of 
-each request will be extracted from the logs 
-* StartTime - the UTC start time to use when aggregating multiple requests. All requests that start after this 
-time will be aggregated
-* EndTime - the UTC end time to use when aggregating multiple requests. All requests that end before this time
-will be aggregated
-* Server - a comma-separated list of server names to pull logs from
+                    Instance ID: 64fb88c5-7f4e-4888-8b61-7d0d85563b82
+
+                    Activity ID: 0c0fd6ee-4b1e-4260-0300-0080070000e3
+
+                    Request Details:
+                        Date And Time: 2017-09-19 20:50:43
+                       Client IP: 123.45.67.9
+                       HTTP Method: GET
+                       Url Absolute Path: /adfs/portal/logo/logo.png
+                       Query string: ?id=12345
+                       Local Port: 443
+                       Local IP: 123.45.67.8
+                       User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36
+                       Content Length: 0
+                       Caller Identity: -
+                       Certificate Identity (if any): -
+                       Targeted relying party: -
+                       Through proxy: False
+                       Proxy DNS name: -
+    CorrelationID : 0c0fd6ee-4b1e-4260-0300-0080070000e3
+    Machine       : contoso.com
+    Log           : Security
+
+    Time          : 9/19/2017 1:50:43 PM
+    EventID       : 410
+    Details       : Following request context headers present :
+
+                    Activity ID: 0c0fd6ee-4b1e-4260-0300-0080070000e3
+
+                    X-MS-Client-Application: -
+                    X-MS-Client-User-Agent: -
+                    client-request-id: -
+                    X-MS-Endpoint-Absolute-Path: /adfs/portal/logo/logo.png
+                    X-MS-Forwarded-Client-IP: -
+                    X-MS-Proxy: -
+                    X-MS-ADFS-Proxy-Client-IP: -
+    CorrelationID : 0c0fd6ee-4b1e-4260-0300-0080070000e3
+    Machine       : contoso.com
+    Log           : Security
+    ```
+
+5. You can pipe the output of ```Write-ADFSEventsSummary``` to a CSV
+
+    ```Get-ADFSEvents -Logs Security, Admin, Debug -CorrelationID 0c0fd6ee-4b1e-4260-0300-0080070000e3 -Server LocalHost, MyServer | Write-ADFSEventsSummary | Export-CSV mylogs.csv``` 
+
+
+6. You can output the full data objects from ```Get-ADFSEvents``` to XML using:
+
+    ```Export-Clixml``` 
+
+    ```Import-Clixml``` 
+
 
 ## Contributing
 
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.microsoft.com.
+This project welcomes contributions and suggestions. We encourage you to fork this project, include any scripts you 
+use for parsing, managing, or manipulating ADFS logs, and then do a pull request to master. If your scripts work, 
+we'll include them so everyone can benefit. 
+
+Most contributions require you to agree to a Contributor License Agreement (CLA) declaring that you have the 
+right to, and actually do, grant us the rights to use your contribution. For details, visit https://cla.microsoft.com.
 
 When you submit a pull request, a CLA-bot will automatically determine whether you need to provide
 a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow the instructions
