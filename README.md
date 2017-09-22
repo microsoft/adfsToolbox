@@ -28,31 +28,32 @@ in.
 * __Logs__ - A list of AD FS logs to include in the aggregation. Current options are: "Admin", "Debug", "Security".
 The default will pull from both Security and Admin.
 * __CorrelationID__ - The correlation ID for a single request. This will aggregate all chosen logs for this request  
-* __AllWithoutHeaders__ - this flag will cause all requests to be grouped by correlation ID, but the HTTP headers 
-will not be extracted from the logs
-* __AllWithHeaders__ - this flag will cause all requests to be grouped by correlation ID, and the HTTP headers of 
-each request will be extracted from the logs 
-* __StartTime__ - the UTC start time to use when aggregating multiple requests. All requests that start after this 
+* __All__ - This flag will cause all events in the desired logs to be grouped by correlation ID.
+* __Headers__ - This flag can be combined with any means of event collection (a single correlation id, all events, or
+time based) to reconstruct available HTTP requests and responses. 
+* __StartTime__ - The UTC start time to use when aggregating multiple requests. All requests that start after this 
 time will be aggregated
-* __EndTime__ - the UTC end time to use when aggregating multiple requests. All requests that end before this time
+* __EndTime__ - The UTC end time to use when aggregating multiple requests. All requests that end before this time
 will be aggregated
-* __Server__ - a comma-separated list of server names to pull logs from. 
+* __Server__ - A comma-separated list of server names to pull logs from. 
 The default will pull from LocalHost
 
 ## Get-ADFSEvents Output
 
-The output produced by Get-ADFSEvents is a list of objects with each containing the following properties:
+The output produced by Get-ADFSEvents is a list of objects with each containing at least the following properties:
 
 1.  __CorrelationID__
 2.  __Events__
-3.  __Headers__
+
 
 The __CorrelationID__ property contains a string representation of the Correlation ID that all events and headers within that object share.
 
 The __Events__ property contains a list of [EventLogRecord](https://msdn.microsoft.com/en-us/library/system.diagnostics.eventing.reader.eventlogrecord)
 objects for the matching Correlation ID.
 
-The __Headers__ property contains a list of objects, each containing of the following properties:
+If the __Headers__ flag is included in the cmdlet's invocation, the output object will also contain a __Headers__ property.
+
+The __Headers__ property contains a list of objects, each containing the following properties:
 
 1.  __QueryString__
 2.  __ResponseString__
@@ -80,7 +81,7 @@ The __ResponseHeader__ property is a dictionary containing the headers included 
 
     EXAMPLE: Retrieve all logs from two servers for a specific request
 
-    ```$logs = Get-ADFSEvents -Logs Security, Admin, Debug -CorrelationID 0c0fd6ee-4b1e-4260-0300-0080070000e3 -Server LocalHost, MyServer```
+    ```$logs = Get-ADFSEvents -Logs Security, Admin, Debug -CorrelationID 0c0fd6ee-4b1e-4260-0300-0080070000e3 -Headers -Server LocalHost, MyServer```
 
     OUTPUT:
 

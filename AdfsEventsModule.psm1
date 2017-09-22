@@ -316,13 +316,20 @@ function AggregateOutputObject
 
     [parameter(Mandatory=$true,Position=2)]
     [AllowEmptyCollection()]
-    [PSObject[]]$Headers)
+    [PSObject[]]$Headers,
+
+    [parameter(Mandatory=$false, Position=3)]
+    [bool]$AddHeaders)
 
      $Output = New-Object PSObject -Property @{
         "CorrelationID" = $CorrID
         "Events" = $Events
-        "Headers" = $Headers
     }
+    if($AddHeaders)
+    {
+        $Output | Add-Member Headers $Headers
+    }
+
     Write-Output $Output
 }
 
@@ -381,13 +388,15 @@ function Get-ADFSEvents
     time conversions will be based on the UTC of these values.
 
     .EXAMPLE
-    Get-ADFSEvents -Logs Security, Admin, Debug -CorrelationID 669bced6-d6ae-4e69-889b-09ceb8db78c9 -Servers LocalHost, MyServer
-    .EXAMPLE
-    Get-ADFSEvents -Logs Admin -AllWithHeaders -Servers LocalHost
-    .EXAMPLE
-    Get-ADFSEvents -Logs Debug, Security -AllWithoutHeaders -Servers LocalHost, Server1, Server2
+    Get-ADFSEvents -Logs Security, Admin, Debug -CorrelationID 669bced6-d6ae-4e69-889b-09ceb8db78c9 -Server LocalHost, MyServer
     .Example
-    Get-ADFSEvents -Logs Debug -StartTime $start -EndTime $End -server localhost
+    Get-ADFSEvents -CorrelationID 669bced6-d6ae-4e69-889b-09ceb8db78c9 -Headers
+    .EXAMPLE
+    Get-ADFSEvents -Logs Admin -All 
+    .EXAMPLE
+    Get-ADFSEvents -Logs Debug, Security -All -Headers -Server LocalHost, Server1, Server2
+    .Example
+    Get-ADFSEvents -Logs Debug -StartTime (Get-Date -Date ("2017-09-14T18:37:26.910168700Z"))  -EndTime (Get-Date) -Headers
 
     #>
 
@@ -403,17 +412,17 @@ function Get-ADFSEvents
     [ValidateNotNullOrEmpty()]
     [string]$CorrelationID,
 
-    [parameter(Mandatory=$true, Position=1, ParameterSetName="AllEventsWithoutHeaderSet")]
-    [switch]$AllWithoutHeaders,
-
-    [parameter(Mandatory=$true, Position=1, ParameterSetName ="AllEventsWithHeaderSet")]
-    [switch]$AllWithHeaders, 
+    [parameter(Mandatory=$true, Position=1, ParameterSetName="AllEventsSet")]
+    [switch]$All,
 
     [parameter(Mandatory=$true, Position=1, ParameterSetName="AllEventsByTimeSet")]
     [DateTime]$StartTime,
 
     [parameter(Mandatory=$true, Position=2, ParameterSetName="AllEventsByTimeSet")]
     [DateTime]$EndTime,
+
+    [parameter(Mandatory=$false)]
+    [switch]$Headers, 
 
     [parameter(Mandatory=$false, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
     [string[]]$Server="LocalHost"
@@ -423,6 +432,12 @@ function Get-ADFSEvents
     {
         $ServerList = @()
         $HashTable = @{}
+        $Var = [ref] [System.Guid]::NewGuid()
+        if($CorrelationID -ne "" -and ![System.Guid]::TryParse($CorrelationID, $Var)){ #Validate provided Correlation ID is a valid GUID
+            Write-Error "Invalid correlation id. Please provide valid input"
+            Break
+        }
+
         if($StartTime -ne $null -and $EndTime -ne $null)
         {
             $ByTime = $true
@@ -445,7 +460,7 @@ function Get-ADFSEvents
         {
             $Session = New-PSSession -ComputerName $Server
             $Events += QueryDesiredLogs -CorrID $CorrelationID -Session $Session -ByTime $ByTime -Start $StartTime.ToUniversalTime() -End $EndTime.ToUniversalTime()
-            if($CorrelationID -ne "")
+            if($CorrelationID -ne "" -and $Headers)
             {
                 $HTTPInformation += GetHTTPRequestInformation -CorrID $CorrelationID -Session $Session
             }
@@ -483,7 +498,7 @@ function Get-ADFSEvents
 
         else #Events gathered for a single correlation id
         {
-            AggregateOutputObject -CorrID $CorrelationID -Events $Events -Headers $HTTPInformation
+            AggregateOutputObject -CorrID $CorrelationID -Events $Events -Headers $HTTPInformation -AddHeader $Headers.IsPresent
         }
 
     }
@@ -493,12 +508,13 @@ function Get-ADFSEvents
         #Print the result of gathering events for all correlation ids
         foreach($EventList in $HashTable.Values)
         {
-            if($AllWithoutHeaders)
+           <# if(!$Headers)
             {
-                Write-Output $EventList
+                AggregateOutputObject -CorrID $EventList[0].CorrelationID -Events $EventList -Headers []
             }
+            #>
 
-            else{ #Gather headers for each correlation id from each server
+            if($Headers){ #Gather headers for each correlation id from each server
                 foreach($Machine in $ServerList)
                 {
                     $HTTPInformation = @()
@@ -518,13 +534,13 @@ function Get-ADFSEvents
                             Remove-PSSession $Session
                         }
                     }  
-                }
-                AggregateOutputObject -CorrID $EventList[0].CorrelationID -Events $EventList -Headers $HTTPInformation
+                }  
             }
+            AggregateOutputObject -CorrID $EventList[0].CorrelationID -Events $EventList -Headers $HTTPInformation -AddHeaders $Headers.IsPresent
         }
     }
     
    
 }
 Export-ModuleMember -Function Get-ADFSEvents
-Export-ModuleMember -Function Write-ADFSEventsSummary
+Export-ModuleMember -Function Write-ADFSEventsSummarys
