@@ -251,6 +251,18 @@ function ConstructHeader
     Write-Output $Dictionary
 }
 
+function CreateHeaderObject
+{
+    $Obj = New-Object PSObject -Property @{
+        "QueryString" = ""
+        "ResponseString" = ""
+        "RequestHeader" = @{}
+        "ResponseHeader"= @{}
+    }
+
+    Write-Output $Obj
+}
+
 function GetHTTPRequestInformation
 {
     param(
@@ -271,29 +283,35 @@ function GetHTTPRequestInformation
 
 
     $HTTPTraffic = @()
+    $HeaderObject = CreateHeaderObject
     #Parse relevant information and store in readable/accessible format
-    for($I = 0; $I -lt $RequestAndResponseEvents.length-1; $I=$I+2)
+    for($I = 0; $I -lt $RequestAndResponseEvents.length; $I++)
     {
-        if($RequestAndResponseEvents[$I].ID -eq 403 -and $RequestAndResponseEvents[$I+1].ID -eq 404)
+        $CurrentID = $RequestAndResponseEvents[$I].ID
+
+        if($CurrentID -eq 403)
         {
-            $QueryString = $RequestAndResponseEvents[$I].RemoteProperties[4] + $RequestAndResponseEvents[$I].RemoteProperties[5] +  $RequestAndResponseEvents[$I].RemoteProperties[6]
-            $ResponseString = $RequestAndResponseEvents[$I+1].RemoteProperties[3] + " " + $RequestAndResponseEvents[$I+1].RemoteProperties[4]
-
-            $Request = ConstructHeader -Event $HeaderEvents[$I]
-            $Response = ConstructHeader -Event $HeaderEvents[$I+1]
-
-            $Obj = New-Object PSObject -Property @{
-                "QueryString" = $QueryString
-                "ResponseString" = $ResponseString
-                "RequestHeader" = $Request
-                "ResponseHeader"= $Response
-            }
-            $HTTPTraffic += $Obj
+            $HeaderObject.QueryString = $RequestAndResponseEvents[$I].RemoteProperties[4] + $RequestAndResponseEvents[$I].RemoteProperties[5] +  $RequestAndResponseEvents[$I].RemoteProperties[6]
+            $HeaderObject.RequestHeader = ConstructHeader -Event $HeaderEvents[$I]
+              
+        }
+        else #Event is a 404
+        {
+            $HeaderObject.ResponseString = $ResponseString = $RequestAndResponseEvents[$I].RemoteProperties[3] + " " + $RequestAndResponseEvents[$I].RemoteProperties[4]
+            $HeaderObject.ResponseHeader = ConstructHeader -Event $HeaderEvents[$I] 
         }
 
-        else
+        if(($CurrentID -eq 404) -or $I -eq ($RequestAndResponseEvents.length-1) -or ($RequestAndResponseEvents[$I+1].ID -eq 403))
         {
-            Write-Error "Unable to match request and response headers"
+            #Begin reconstructing next header if current event is 404 (response), at the end of events list, or the next event represents a request
+            $HTTPTraffic += $HeaderObject
+            $HeaderObject = CreateHeaderObject #Clear object for next iteration of loop
+        }
+
+        if(($I % 2 -eq 0 -and $CurrentID -eq 404) -or ($I %2 -eq 1 -and $CurrentID -eq 403))
+        {
+            #Expecting each 403 to be followed by a 404. Each 403 should have an even index and each 404 should have an odd index in the list.
+            Write-Warning "Unable to match request and response headers"
         }
     }
 
@@ -508,11 +526,6 @@ function Get-ADFSEvents
         #Print the result of gathering events for all correlation ids
         foreach($EventList in $HashTable.Values)
         {
-           <# if(!$Headers)
-            {
-                AggregateOutputObject -CorrID $EventList[0].CorrelationID -Events $EventList -Headers []
-            }
-            #>
 
             if($Headers){ #Gather headers for each correlation id from each server
                 foreach($Machine in $ServerList)
