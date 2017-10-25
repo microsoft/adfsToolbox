@@ -358,17 +358,19 @@ function Write-ADFSEventsSummary
 
     #Define Columns
     $col1 = New-Object system.Data.DataColumn Time,([string])
-    $col2 = New-Object system.Data.DataColumn EventID,([string])
-    $col3 = New-Object system.Data.DataColumn Details,([string])
-    $col4 = New-Object system.Data.DataColumn CorrelationID,([string])
-    $col5 = New-Object system.Data.DataColumn Machine,([string])
-    $col6 = New-Object system.Data.DataColumn Log,([string])
+    $col2 = New-Object System.Data.DataColumn Level,([string])
+    $col3 = New-Object system.Data.DataColumn EventID,([string])
+    $col4 = New-Object system.Data.DataColumn Details,([string])
+    $col5 = New-Object system.Data.DataColumn CorrelationID,([string])
+    $col6 = New-Object system.Data.DataColumn Machine,([string])
+    $col7 = New-Object system.Data.DataColumn Log,([string])
     $table.columns.add( $col1 )
     $table.columns.add( $col2 )
     $table.columns.add( $col3 )
     $table.columns.add( $col4 )
     $table.columns.add( $col5 )
     $table.columns.add( $col6 )
+    $table.columns.add( $col7 )
 
     foreach($Event in $input.Events){
         #Create a row
@@ -380,6 +382,7 @@ function Write-ADFSEventsSummary
         $row.CorrelationID = $Event.CorrelationID
         $row.Machine = $Event.MachineName
         $row.Log = $Event.LogName
+        $row.Level = $Event.LevelDisplayName
 
         #Add the row to the table
         $table.Rows.Add($row)    
