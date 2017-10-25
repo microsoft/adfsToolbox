@@ -446,47 +446,41 @@ function Get-ADFSEvents
     [string[]]$Server="LocalHost"
     )
 
-    Begin
-    {
-        $ServerList = @()
-        $HashTable = @{}
-        $Var = [ref] [System.Guid]::NewGuid()
-        if($CorrelationID -ne "" -and ![System.Guid]::TryParse($CorrelationID, $Var)){ #Validate provided Correlation ID is a valid GUID
-            Write-Error "Invalid correlation id. Please provide valid input"
-            Break
-        }
-
-        if($StartTime -ne $null -and $EndTime -ne $null)
-        {
-            $ByTime = $true
-        }
-        else
-        {
-            $ByTime = $false
-            #Set values to prevent binding issues when passing parameters
-            $StartTime = Get-Date
-            $EndTime = Get-Date
-        }
+  
+    $ServerList = @()
+    $HashTable = @{}
+    $Var = [ref] [System.Guid]::NewGuid()
+    if($CorrelationID -ne "" -and ![System.Guid]::TryParse($CorrelationID, $Var)){ #Validate provided Correlation ID is a valid GUID
+        Write-Error "Invalid correlation id. Please provide valid input"
+        Break
     }
 
-    Process
+    if($StartTime -ne $null -and $EndTime -ne $null)
     {
-        $ServerList += $Server
+        $ByTime = $true
+    }
+    else
+    {
+        $ByTime = $false
+        #Set values to prevent binding issues when passing parameters
+        $StartTime = Get-Date
+        $EndTime = Get-Date
+    }
+    
+
+    foreach($Machine in $Server)
+    {
+        $ServerList += $Machine
         $Events = @()
         $HTTPInformation = @()
         Try
         {
-            $Session = New-PSSession -ComputerName $Server
-            $Events += QueryDesiredLogs -CorrID $CorrelationID -Session $Session -ByTime $ByTime -Start $StartTime.ToUniversalTime() -End $EndTime.ToUniversalTime()
-            if($CorrelationID -ne "" -and $Headers)
-            {
-                $HTTPInformation += GetHTTPRequestInformation -CorrID $CorrelationID -Session $Session
-            }
-            
+            $Session = New-PSSession -ComputerName $Machine
+            $Events += QueryDesiredLogs -CorrID $CorrelationID -Session $Session -ByTime $ByTime -Start $StartTime.ToUniversalTime() -End $EndTime.ToUniversalTime()    
         }
         Catch
         {
-            Write-Warning "Error collecting events from $Server. Error: $_"
+            Write-Warning "Error collecting events from $Machine. Error: $_"
         }
         Finally
         {
@@ -495,65 +489,57 @@ function Get-ADFSEvents
                 Remove-PSSession $Session
             }
         }
-        if($CorrelationID -eq "")
+       
+        foreach($Event in $Events)
         {
-            foreach($Event in $Events)
-            {
-                $ID = [string] $Event.CorrelationID
+            $ID = [string] $Event.CorrelationID
                 
-                if(![string]::IsNullOrEmpty($ID) -and $HashTable.Contains($ID)) #Add event to exisiting list
-                {
-                    $HashTable.$ID =  $HashTable.$ID + $Event
-                }
-
-                elseif(![string]::IsNullOrEmpty($ID))
-                {
-                    $HashTable.$ID = @() + $Event #Add correlation ID and fist event to hashtable
-                }
-
+            if(![string]::IsNullOrEmpty($ID) -and $HashTable.Contains($ID)) #Add event to exisiting list
+            {
+                $HashTable.$ID =  $HashTable.$ID + $Event
             }
-        }
 
-        else #Events gathered for a single correlation id
-        {
-            AggregateOutputObject -CorrID $CorrelationID -Events $Events -Headers $HTTPInformation -AddHeader $Headers.IsPresent
-        }
+            elseif(![string]::IsNullOrEmpty($ID))
+            {
+                $HashTable.$ID = @() + $Event #Add correlation ID and fist event to hashtable
+            }
 
+        }
+        
     }
 
-    End
+ 
+    #Print the result of gathering events for all correlation ids
+    foreach($EventList in $HashTable.Values)
     {
-        #Print the result of gathering events for all correlation ids
-        foreach($EventList in $HashTable.Values)
-        {
 
-            if($Headers){ #Gather headers for each correlation id from each server
-                foreach($Machine in $ServerList)
+        if($Headers){ #Gather headers for each correlation id from each server
+            foreach($Machine in $ServerList)
+            {
+                $HTTPInformation = @()
+                try
                 {
-                    $HTTPInformation = @()
-                    try
+                    $Session = New-PSSession -ComputerName $Machine
+                    $HTTPInformation += GetHTTPRequestInformation -CorrID $EventList[0].CorrelationID -Session $Session
+                }
+                Catch
+                {
+                    Write-Warning "Error collecting HTTP traffic from $Machine. Error: $_"
+                }
+                Finally
+                {
+                    if($Session)
                     {
-                        $Session = New-PSSession -ComputerName $Machine
-                        $HTTPInformation += GetHTTPRequestInformation -CorrID $EventList[0].CorrelationID -Session $Session
+                        Remove-PSSession $Session
                     }
-                    Catch
-                    {
-                        Write-Warning "Error collecting HTTP traffic from $Server. Error: $_"
-                    }
-                    Finally
-                    {
-                        if($Session)
-                        {
-                            Remove-PSSession $Session
-                        }
-                    }  
                 }  
-            }
-            AggregateOutputObject -CorrID $EventList[0].CorrelationID -Events $EventList -Headers $HTTPInformation -AddHeaders $Headers.IsPresent
+            }  
         }
+        AggregateOutputObject -CorrID $EventList[0].CorrelationID -Events $EventList -Headers $HTTPInformation -AddHeaders $Headers.IsPresent
     }
+    
     
    
 }
 Export-ModuleMember -Function Get-ADFSEvents
-Export-ModuleMember -Function Write-ADFSEventsSummarys
+Export-ModuleMember -Function Write-ADFSEventsSummary
