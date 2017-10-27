@@ -273,7 +273,9 @@ function GetHTTPRequestInformation
     [System.Management.Automation.Runspaces.PSSession]$Session)
 
     #Retreive 403 (Request) and 404 (Response) events along with corresponding 510's from security log
-    $RequestAndResponseEvents = Get403And404Events -CorrID $CorrID -Session $Session
+    $RequestAndResponseEvents = @()
+    $RequestAndResponseEvents += Get403And404Events -CorrID $CorrID -Session $Session
+
     $HeaderEvents = @()
     foreach($Event in $RequestAndResponseEvents)
     {
@@ -288,6 +290,7 @@ function GetHTTPRequestInformation
     for($I = 0; $I -lt $RequestAndResponseEvents.length; $I++)
     {
         $CurrentID = $RequestAndResponseEvents[$I].ID
+
 
         if($CurrentID -eq 403)
         {
@@ -308,7 +311,7 @@ function GetHTTPRequestInformation
             $HeaderObject = CreateHeaderObject #Clear object for next iteration of loop
         }
 
-        if(($I % 2 -eq 0 -and $CurrentID -eq 404) -or ($I %2 -eq 1 -and $CurrentID -eq 403))
+        if(($I % 2 -eq 0 -and $CurrentID -eq 404) -or ($I %2 -eq 1 -and $CurrentID -eq 403) -or ($CurrentID -eq 403 -and $I -eq $RequestAndResponseEvents.length-1) )
         {
             #Expecting each 403 to be followed by a 404. Each 403 should have an even index and each 404 should have an odd index in the list.
             Write-Warning "Unable to match request and response headers"
@@ -382,7 +385,7 @@ function Write-ADFSEventsSummary
         $row.CorrelationID = $Event.CorrelationID
         $row.Machine = $Event.MachineName
         $row.Log = $Event.LogName
-        $row.Level = $Event.LevelDisplayName
+	$row.Level = $Event.LevelDisplayName
 
         #Add the row to the table
         $table.Rows.Add($row)    
@@ -496,6 +499,11 @@ function Get-ADFSEvents
         foreach($Event in $Events)
         {
             $ID = [string] $Event.CorrelationID
+
+            if($CorrelationID -ne "" -and $CorrelationID -ne $ID)
+            {
+                continue #Unrelated event mentioned correlation id in data blob
+            }
                 
             if(![string]::IsNullOrEmpty($ID) -and $HashTable.Contains($ID)) #Add event to exisiting list
             {
