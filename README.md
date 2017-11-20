@@ -8,16 +8,17 @@ from the logs.
 
 ## Cmdlets in AdfsEventsModule
 
-This module exposes two cmdlets: 
+This module exposes the following cmdlets: 
 
-__```Get-ADFSEvents```__
+1. __```Get-ADFSEvents```__ - Allows you to query servers for ADFS logs. Contains options for querying, aggregation, and analysis
 
-and 
+2. __```Write-ADFSEventsSummary```__ - Allows you to generate a summary of an ADFS request, based on the logs from ```Get-ADFSEvents```
 
-__```Write-ADFSEventsSummary```__
+3. __```Enable-ADFSAuditing```__ - Enables all the ADFS and OS auditing switches on the current server, and enables just the ADFS switches on remote servers
 
-The detailed parameters for each are provided below.
+4. __```Disable-ADFSAuditing```__ - Disables all the ADFS and OS auditing switches on the current server, and disables just the ADFS switches on remote servers
 
+The detailed parameters for __```Get-ADFSEvents```__ and __```Write-ADFSEventsSummary```__ are provided below.
 
 The ```Get-ADFSEvents``` cmdlet is used to aggregate events by correlation ID, while the ```Write-ADFSEventsSummary```
 cmdlet is used to generate a PowerShell Table of only the most relevant logging information from the events that are piped
