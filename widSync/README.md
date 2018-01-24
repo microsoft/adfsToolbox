@@ -1,12 +1,12 @@
-# ADFS Management Tools
+# ADFS WID Sync
 
-## Overview 
+## Overview
 
-This repository contains useful web customizations for ADFS. The following customizations are currently included: 
+## Requirements 
 
-1. __[diagnosticsModule](diagnosticsModule)__ - PowerShell script to do basic health checks against ADFS. Determines if ADFS is in a healthy state.
+## Getting Started 
 
-2. __[widSync](widSync)__ - PowerShell script to force a full WID sync to an ADFS secondary node
+
 
 ## Contributing
 
