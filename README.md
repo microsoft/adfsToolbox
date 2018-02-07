@@ -1,12 +1,12 @@
-# ADFS Management Tools
+# AD FS Management Tools
 
 ## Overview 
 
-This repository contains useful web customizations for ADFS. The following customizations are currently included: 
+This repository contains tools for helping you manage your AD FS farm. The following tools are currently included: 
 
-1. __[diagnosticsModule](diagnosticsModule)__ - PowerShell script to do basic health checks against ADFS. Determines if ADFS is in a healthy state.
+1. __[diagnosticsModule](diagnosticsModule)__ - PowerShell script to do basic health checks against AD FS. Determines if AD FS is in a healthy state.
 
-2. __[widSync](widSync)__ - PowerShell script to force a full WID sync to an ADFS secondary node
+2. __[widSync](widSync)__ - PowerShell script to force a full WID sync to an AD FS secondary node
 
 ## Contributing
 
