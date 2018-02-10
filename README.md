@@ -30,45 +30,24 @@ in.
 The default will pull from both Security and Admin.
 * __CorrelationID__ - The correlation ID for a single request. This will aggregate all chosen logs for this request  
 * __All__ - This flag will cause all events in the desired logs to be grouped by correlation ID.
-* __Headers__ - This flag can be combined with any means of event collection (a single correlation id, all events, or
-time based) to reconstruct available HTTP requests and responses. 
+* __CreateAnalysisData__ - This flag can be combined with any means of event collection (a single Correlation ID, all events, or
+time based) to reconstruct the HTTP requests that were performed for each Correlation ID. 
 * __StartTime__ - The UTC start time to use when aggregating multiple requests. All requests that start after this 
 time will be aggregated
 * __EndTime__ - The UTC end time to use when aggregating multiple requests. All requests that end before this time
 will be aggregated
-* __Server__ - A comma-separated list of server names to pull logs from. 
-The default will pull from LocalHost
+* __Server__ - A comma-separated list of server names to pull logs from. On ADFS 2016 and up, you can use "\*" to query all
+The default will query LocalHost
 
 ## Get-ADFSEvents Output
 
-The output produced by Get-ADFSEvents is a list of objects with each containing at least the following properties:
+The output produced by Get-ADFSEvents is a list of objects, each containing the following properties. 
 
-1.  __CorrelationID__
-2.  __Events__
-
-
-The __CorrelationID__ property contains a string representation of the Correlation ID that all events and headers within that object share.
-
-The __Events__ property contains a list of [EventLogRecord](https://msdn.microsoft.com/en-us/library/system.diagnostics.eventing.reader.eventlogrecord)
-objects for the matching Correlation ID.
-
-If the __Headers__ flag is included in the cmdlet's invocation, the output object will also contain a __Headers__ property.
-
-The __Headers__ property contains a list of objects, each containing the following properties:
-
-1.  __QueryString__
-2.  __ResponseString__
-3.  __RequestHeader__
-4.  __ResponseHeader__
-
-The __QueryString__ property contains the HTTP verb (GET, POST, etc) and the corresponding query string.
-
-The __ResponseString__ property contains the HTTP response string (ex. 200 ok)
-
-The __RequestHeader__ property is a dictionary containing the headers included in the HTTP request
-
-The __ResponseHeader__ property is a dictionary containing the headers included in the HTTP response
-
+1.  __CorrelationID__ - the Correlation ID for this set of events
+2.  __Events__ - a list of [EventLogRecord](https://msdn.microsoft.com/en-us/library/system.diagnostics.eventing.reader.eventlogrecord)
+objects for the matching Correlation ID. 
+3.  __AnalysisData__ - a JSON data blob containing details on the HTTP requests that were performed during the course of this transaction
+For more details on the AnalysisData blob, see below
 
 ## Using Get-ADFSEvents
 
@@ -82,20 +61,20 @@ The __ResponseHeader__ property is a dictionary containing the headers included 
 
     EXAMPLE: Retrieve all logs from two servers for a specific request
 
-    ```$logs = Get-ADFSEvents -Logs Security, Admin, Debug -CorrelationID 0c0fd6ee-4b1e-4260-0300-0080070000e3 -Headers -Server LocalHost, MyServer```
+    ```$logs = Get-ADFSEvents -Logs Security, Admin, Debug -CorrelationID 0c0fd6ee-4b1e-4260-0300-0080070000e3 -Server LocalHost, MyServer```
 
     OUTPUT:
 
     ```
-    Events                              Headers CorrelationID
-    ------                              ------- -------------
+    Events                              AnalysisData  CorrelationID
+    ------                              -------       -------------
 
-    {EventLogRecord, EventLogRecord}    {}      0c0fd6ee-4b1e-4260-0300-0080070000e3
+    {EventLogRecord, EventLogRecord}    {}            0c0fd6ee-4b1e-4260-0300-0080070000e3
     ```
 
 3. To view specific records:
 
-    ```$logs.Events[0]```
+    ```$logs[0].Events[0]```
 
     OUTPUT:
 
@@ -216,6 +195,44 @@ The __ResponseHeader__ property is a dictionary containing the headers included 
     ```Export-Clixml``` 
 
     ```Import-Clixml``` 
+
+
+## The AnalysisData Blob
+
+The AnalysisData blob contains the following: 
+
+* ```requests``` - a set of HTTP requests made during the current transaction. 
+Each request contains request details, HTTP header information, and session token information (when available)
+
+* ```responses``` - a set of HTTP responses given during the current transaction. 
+Each response contains response details, HTTP header information, and outgoing tokens (when available)
+
+* ```errors``` - a set of [EventLogRecord](https://msdn.microsoft.com/en-us/library/system.diagnostics.eventing.reader.eventlogrecord) objects from 
+the current transaction that are marked as errors
+
+* ```timeline``` - a set of timeline events to show the progress of a transaction through the ADFS pipeline. 
+  Timeline events correspond to roughly the following: 
+
+    * ```incoming``` - ADFS received an incoming HTTP request 
+    * ```authn``` - ADFS is performing authentication 
+    * ```authz``` - ADFS is performing authorization checks 
+    * ```issuance``` - ADFS is performing token issuance 
+
+  Each timeline event contains a ```success``` or ```failure``` result, indicating whether the given pipeline step was a success or failure. 
+
+## Pester Tests 
+
+This project includes a set of [Pester](https://github.com/pester/Pester) tests to ensure the basic functionality of the script. 
+
+To run the tests, you must have Pester version 4.x or higher installed on the machine you will run ```Get-ADFSEvents``` from. 
+For more information on installing Pester, see their [installation instructions](https://github.com/pester/Pester/wiki/Installation-and-Update). 
+
+Once Pester is installed, you can copy the test file and script to the same location, and run the following: 
+
+    cd <directory containing tests and script>
+    Invoke-Pester -Script .\Test.AdfsEventsModule.ps1
+
+For more details, see [the testing Readme](TESTDETAILS.md)
 
 
 ## Contributing
