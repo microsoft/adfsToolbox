@@ -452,9 +452,10 @@ function MakeQuery
         #
         # Perform Get-WinEvent call to collect logs 
         #
+        $Result = @()
         if ( $FilePath.Length -gt 0 -and !$ByTime)
         {   
-            $Result = Get-WinEvent -Path $FilePath -FilterXPath $Query -ErrorAction SilentlyContinue -Oldest
+            $Result += Get-WinEvent -Path $FilePath -FilterXPath $Query -ErrorAction SilentlyContinue -Oldest
         }
         elseif ( $ByTime )
         {
@@ -466,20 +467,20 @@ function MakeQuery
             # Filtering based on time is more robust when using hashtable filters
             if($FilePath.Length -gt 0)
             {
-                $Result = Get-WinEvent -FilterHashtable @{Path = $FilePath; providername = $providername; starttime = $AdjustedStart; endtime = $AdjustedEnd} -ErrorAction SilentlyContinue
+                $Result += Get-WinEvent -FilterHashtable @{Path = $FilePath; providername = $providername; starttime = $AdjustedStart; endtime = $AdjustedEnd} -ErrorAction SilentlyContinue
             }
             elseif ( $Log -eq "security" )
             {
-                $Result = Get-WinEvent -FilterHashtable @{logname = $Log; providername = $providername; starttime = $AdjustedStart; endtime = $AdjustedEnd} -ErrorAction SilentlyContinue
+                $Result += Get-WinEvent -FilterHashtable @{logname = $Log; providername = $providername; starttime = $AdjustedStart; endtime = $AdjustedEnd} -ErrorAction SilentlyContinue
             }
             else
             {
-                $Result = Get-WinEvent -FilterHashtable @{logname = $Log; starttime = $AdjustedStart; endtime = $AdjustedEnd} -ErrorAction SilentlyContinue -Oldest
+                $Result += Get-WinEvent -FilterHashtable @{logname = $Log; starttime = $AdjustedStart; endtime = $AdjustedEnd} -ErrorAction SilentlyContinue -Oldest
             }
         }
         else
         {
-            $Result = Get-WinEvent -LogName $Log -FilterXPath $Query -ErrorAction SilentlyContinue -Oldest
+            $Result += Get-WinEvent -LogName $Log -FilterXPath $Query -ErrorAction SilentlyContinue -Oldest
         }
 
         #
@@ -1479,11 +1480,10 @@ function Get-ADFSEvents
         Write-Error "Invalid Correlation ID. Please provide a valid GUID."
         Break
     }
-    
+    $Events = @()
     # Iterate through each server, and collect the required logs
     foreach ( $Machine in $Server )
     {
-        $Events = @()
         $includeLinks = $false
         if ( $CreateAnalysisData )
         {
