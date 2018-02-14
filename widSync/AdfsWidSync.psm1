@@ -32,45 +32,47 @@ function Reset-AdfsWidServiceStateSummarySerialNumbers
     Write-Host $rowsAffected "rows have been affected by the reset of SerialNumber column"
 } 
 
-param (
-    [Parameter(Mandatory=$false)]
-    [bool] $Force=$false
-)
-
-$role = (Get-AdfsSyncProperties).role
-$LastSyncStatus =  (Get-AdfsSyncProperties).LastSyncStatus
-
-if ($force -eq $true)
+function Invoke-WidSync
 {
+    param (
+        [Parameter(Mandatory=$false)]
+        [switch] $Force
+    )
+
+    if ( -not $force )
+    {
+        Write-Host "You must use the 'Force' parameter" -ForegroundColor Yellow
+        return
+    }
+
+    $role = (Get-AdfsSyncProperties).role
+    $LastSyncStatus = (Get-AdfsSyncProperties).LastSyncStatus
+
     if ($role -eq "SecondaryComputer")
     {
         if ($LastSyncStatus -eq '0')
         {
-            Write-host "This ADFS server is a secondary server and last SYNC was successfull, let's reset the serialnumber column of ServiceStateSummary table in order to force a full sync"-ForegroundColor Green
+            Write-Host "Resetting the serialnumber column of ServiceStateSummary table to force a full WID sync" -ForegroundColor Green
         
-            Write-host "ServiceStateSummary table content before the reset ..." -ForegroundColor Green
-            get-AdfsWidServiceStateSummary
+            Write-Host "ServiceStateSummary table content before reset:" -ForegroundColor Green
+            Get-AdfsWidServiceStateSummary
 
-            Write-host "Resetting the serialnumber of ServiceStateSummary table" -ForegroundColor Green
-            reset-AdfsWidServiceStateSummarySerialNumbers
+            Write-Host "Resetting the serialnumber of ServiceStateSummary table" -ForegroundColor Green
+            Reset-AdfsWidServiceStateSummarySerialNumbers
 
-            Write-host "ServiceStateSummary table content after the reset ..." -ForegroundColor Green
-            get-AdfsWidServiceStateSummary
+            Write-Host "ServiceStateSummary table content after reset:" -ForegroundColor Green
+            Get-AdfsWidServiceStateSummary
 
-            Write-host "The  FULL sync will occur on this ADFS Secondary server during the next normal sync poll (by default it occurs every 5 minutes)..." -ForegroundColor Green
+            Write-Host "The full sync will occur on this AD FS Secondary server during the next normal sync poll (by default it occurs every 5 minutes)" -ForegroundColor Green
         } 
         else 
         {
-            Write-Host "The last sync status was not sucessfull"-ForegroundColor Yellow
+            Write-Host "The last sync status was not sucessful. Cannot force WID sync." -ForegroundColor Yellow
         }
     }
     else
     {
-        Write-Host "This ADFS server is NOT a secondary server" -ForegroundColor Yellow
+        Write-Host "This AD FS server is NOT a secondary server. Please run this cmdlet on your secondary server." -ForegroundColor Yellow
     }
-
-} 
-else
-{
-    Write-Host "You must use the 'force' parameter" -ForegroundColor Yellow
+    
 }
