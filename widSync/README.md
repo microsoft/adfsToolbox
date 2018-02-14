@@ -32,7 +32,7 @@ A full sync means all rows of all tables of the WID database will be re-synced f
 
     ```Invoke-WidSync -Force```
 
-``` OUTPUT:
+    OUTPUT:
 
     PS C:\Tools> ipmo AdfsWidSync.psm1
     PS C:\Tools> Invoke-WidSync -Force
@@ -88,7 +88,7 @@ A full sync means all rows of all tables of the WID database will be re-synced f
      
      
     The full sync will occur on this AD FS Secondary server during the next normal sync poll (by default it occurs every 5 minutes)
-    ```
+
 
 
 ## Invoke-WidSync Parameters
