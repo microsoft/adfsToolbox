@@ -75,3 +75,5 @@ function Invoke-WidSync
         Write-Host "This AD FS server is not a secondary server. Please run this cmdlet on your secondary server." -ForegroundColor Yellow
     }
 }
+
+Export-ModuleMember -Function Invoke-WidSync;
