@@ -4,36 +4,51 @@
 
 This module provides cmdlets that can be used to perform various tests on AD FS and WAP servers. The tests can help ensure that the AD FS / WAP service are up and running. Using the cmdlets in the module, you can root cause a service level issue faster.
 
-## Requirements 
+## Requirements
 
-1. This script requires an AD FS environment (2012R2 or higher) 
+1. AD FS environment (2012R2 or higher) or WAP environment
 
-or 
+## Getting Started
 
-2. This script requires an WAP environment
+### Install through PowerShell Gallery (Recommended)
 
-## Getting Started 
+1. Install the PowerShell Module
 
-1. Download the `ADFSDiagnostics.psm1` module to your server
+    In a PowerShell window, run the follow:
 
-2. Import the PowerShell Module 
+    `Install-Module -Name ADFSDiagnostics -Force`
+
+2. Import the PowerShell Module
 
     In a PowerShell window, run the following:
 
-    ```ipmo ADFSDiagnostics.psm1```
+    `Import-Module ADFSDiagnostics`
 
 3. Run the cmdlet of your choice, with the required parameters (see below for details)
 
+
+### Install manually
+
+1. [Download the repository](https://github.com/Microsoft/adfsManagementTools/zipball/master)
+2. Unzip the download and copy `ADFSDiagnostics` folder to `C:\Program Files\WindowsPowerShell\Modules\`
+3. Import the PowerShell Module
+
+    In a PowerShell window, run the following:
+
+    `Import-Module ADFSDiagnostics`
+
+4. Run the cmdlet of your choice, with the required parameters (see below for details)
+
 ## Available Cmdlets
 
-1. **Get-AdfsSystemInformation**: This command gathers information regarding operating system and hardware
-2. **Get-AdfsServerConfiguration**: This command takes a snapshot of the AD FS farm configuration and relevant dependencies
-3.  **Test-AdfsServerToken**: This command verifies if you can reach AD FS service and get a token issued for the credentials supplied or the identity under which the cmdlet is run
-4.  **Test-AdfsServerHealth**: This command performs health checks of the server. The health checks are role-specific (WAP or AD FS)
+1. `Get-AdfsSystemInformation`: This command gathers information regarding operating system and hardware
+2. `Get-AdfsServerConfiguration`: This command takes a snapshot of the AD FS farm configuration and relevant dependencies
+3. `Test-AdfsServerToken`: This command verifies if you can reach AD FS service and get a token issued for the credentials supplied or the identity under which the cmdlet is run
+4. `Test-AdfsServerHealth`: This command performs health checks of the server. The health checks are role-specific (WAP or AD FS)
 
 ## Get-AdfsSystemInformation
 
-**No parameters**
+* **No parameters**
 
 **Usage**: `Get-AdfsSystemInformation`
 
@@ -116,7 +131,7 @@ Name       : Common Name
 ShortName  : commonname
 Notes      : The common name of the user
 
-(more info) ... 
+(more info) ...
 
 
 
@@ -140,20 +155,21 @@ IsDirectoryConfigured                : True
 * **FederationServer**: Federation Server (Farm) host name Federation Server (Farm) host name
 * **AppliesTo**: Identifier of the target relying party
 * **Credential**: Optional Username Credential used to retrieve the token
+
 **Usage**: `Test-AdfsServerToken -FederationServer sts.contoso.com -AppliesTo urn:examplerpt`
 
 ## Test-AdfsServerHealth
-* verifyO365: Boolean parameter that will enable Office 365 targeted checks. It is true by default
-* verifyTrustCerts: Boolean parameter that will enable additional checks for relying party trust and claims provider trust certificates. It is false by default
+* **verifyO365**: Boolean parameter that will enable Office 365 targeted checks. It is true by default
+* **verifyTrustCerts**: Boolean parameter that will enable additional checks for relying party trust and claims provider trust certificates. It is false by default
 
 **Usage**: `Test-AdfsServerHealth -VerifyOffice365:<$true / $false> -VerifyTrustCerts:<$true / $false>`
 
 ## Contributing
-You are welcome to contribute to the module and provide suggestions. We encourage you to fork this project, include any scripts you 
-use for managing AD FS, and then do a pull request to master. If your scripts work, 
-we'll include them so everyone can benefit. 
+You are welcome to contribute to the module and provide suggestions. We encourage you to fork this project, include any scripts you
+use for managing AD FS, and then do a pull request to master. If your scripts work,
+we'll include them so everyone can benefit.
 
-Most contributions require you to agree to a Contributor License Agreement (CLA) declaring that you have the 
+Most contributions require you to agree to a Contributor License Agreement (CLA) declaring that you have the
 right to, and actually do, grant us the rights to use your contribution. For details, visit https://cla.microsoft.com.
 
 When you submit a pull request, a CLA-bot will automatically determine whether you need to provide
