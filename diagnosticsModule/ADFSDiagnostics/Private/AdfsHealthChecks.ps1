@@ -1097,10 +1097,10 @@ Function TestADFSO365RelyingParty
             $testPassed = $false
         }
 
-        if ($aadRp.SignatureAlgorithm -ne "http://www.w3.org/2000/09/xmldsig#rsa-sha1")
+        if ($aadRp.SignatureAlgorithm -ne "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256")
         {
             $testResult.Result = [ResultType]::Fail;
-            $testResult.Detail += $aadRpName + " Relying Party token signature algorithm is not SHA1`n";
+            $testResult.Detail += $aadRpName + " Relying Party token signature algorithm is not SHA-256`n";
             if (-not $aadRpDetail)
             {
                 $testResult.Detail += "Relying Party Trust Display Name: " + $aadRp.Name + "`n";
