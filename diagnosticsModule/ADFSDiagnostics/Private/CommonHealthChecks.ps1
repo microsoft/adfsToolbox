@@ -18,10 +18,6 @@ Function TestIsAdfsRunning()
     }
     catch [Exception]
     {
-        $testResult = New-Object TestResult -ArgumentList($testName);
-        $testResult.Result = [ResultType]::NotRun;
-        $testResult.Detail = $_.Exception.Message;
-        $testResult.ExceptionMessage = $_.Exception.Message
-        return $testResult;
+        return Create-ErrorExceptionTestResult $testName $_.Exception
     }
 }
