@@ -68,7 +68,7 @@ Function Test-CertificateAvailable
     }
     catch [Exception]
     {
-        return Create-NotRunExceptionTestResult $testName $_.Exception.Message
+        return Create-ErrorExceptionTestResult $testName $_.Exception
     }
 }
 
@@ -116,7 +116,7 @@ function Test-CertificateExpired
     }
     catch [Exception]
     {
-        return Create-NotRunExceptionTestResult $testName $_.Exception.Message
+        return Create-ErrorExceptionTestResult $testName $_.Exception
     }
 }
 
@@ -173,7 +173,7 @@ function Test-CertificateAboutToExpire
     }
     catch [Exception]
     {
-        return Create-NotRunExceptionTestResult $testName $_.Exception.Message
+        return Create-ErrorExceptionTestResult $testName $_.Exception
     }
 }
 
@@ -236,7 +236,7 @@ function Test-CertificateHasPrivateKey
     }
     catch [Exception]
     {
-        return Create-NotRunExceptionTestResult $testName $_.Exception.Message
+        return Create-ErrorExceptionTestResult $testName $_.Exception
     }
 }
 
@@ -287,7 +287,7 @@ function Test-CertificateSelfSigned
     }
     catch [Exception]
     {
-        return Create-NotRunExceptionTestResult $testName $_.Exception.Message
+        return Create-ErrorExceptionTestResult $testName $_.Exception
     }
 }
 
@@ -345,6 +345,6 @@ function Test-CertificateCRL
     }
     catch [Exception]
     {
-        return Create-NotRunExceptionTestResult $testName $_.Exception.Message
+        return Create-ErrorExceptionTestResult $testName $_.Exception
     }
 }

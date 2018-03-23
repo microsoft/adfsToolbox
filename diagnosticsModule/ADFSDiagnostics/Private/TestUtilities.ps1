@@ -9,18 +9,19 @@ Function Create-NotRunOnSecondaryTestResult
     return $testResult
 }
 
-Function Create-NotRunExceptionTestResult
+Function Create-ErrorExceptionTestResult
 {
     param(
         [string]
         $testName,
-        [string]
-        $exceptionMessage
+        [Exception]
+        $exception
     )
+
     $testResult = New-Object TestResult -ArgumentList($testName);
-    $testResult.Result = [ResultType]::NotRun;
-    $testResult.Detail = $exceptionMessage;
-    $testResult.ExceptionMessage = $exceptionMessage
+    $testResult.Result = [ResultType]::Error;
+    $testResult.ExceptionMessage = $exception.Message;
+    $testResult.Exception = $exception;
     return $testResult;
 }
 
@@ -72,20 +73,23 @@ Function TestAdfsSTSHealth()
     }
 
     $functionsToRun = @( `
-            "TestIsAdfsRunning", `
-            "TestIsWidRunning", `
-            "TestPingFederationMetadata", `
-            "TestSslBindings", `
-            "Test-AdfsCertificates", `
-            "TestADFSDNSHostAlias", `
-            "TestADFSDuplicateSPN", `
-            "TestServiceAccountProperties", `
-            "TestAppPoolIDMatchesServiceID", `
-            "TestComputerNameEqFarmName", `
-            "TestSSLUsingADFSPort", `
-            "TestSSLCertSubjectContainsADFSFarmName", `
-            "TestAdfsAuditPolicyEnabled", `
-            "TestAdfsRequestToken");
+        "TestIsAdfsRunning", `
+        "TestIsWidRunning", `
+        "TestPingFederationMetadata", `
+        "TestSslBindings", `
+        "Test-AdfsCertificates", `
+        "TestADFSDNSHostAlias", `
+        "TestADFSDuplicateSPN", `
+        "TestServiceAccountProperties", `
+        "TestAppPoolIDMatchesServiceID", `
+        "TestComputerNameEqFarmName", `
+        "TestSSLUsingADFSPort", `
+        "TestSSLCertSubjectContainsADFSFarmName", `
+        "TestAdfsAuditPolicyEnabled", `
+        "TestAdfsRequestToken", `
+        "TestTrustedDevicesCertificateStore", `
+        "TestAdfsPatches", `
+        "TestServicePrincipalName");
 
     if ($verifyO365 -eq $true)
     {
@@ -95,11 +99,30 @@ Function TestAdfsSTSHealth()
             "TestNtlmOnlySupportedClientAtProxyEnabled" )
     }
 
-    Invoke-TestFunctions -role "STS" -functionsToRun $functionsToRun
+    return Invoke-TestFunctions -role "STS" -functionsToRun $functionsToRun;
 }
 
 Function TestAdfsProxyHealth()
 {
-    $functionsToRun = @("TestIsAdfsRunning", "TestSTSReachableFromProxy")
-    Invoke-TestFunctions -role "Proxy" -functionsToRun $functionsToRun
+    Param(
+        [string]
+        $AdfsSslThumbprint
+    )
+
+    $functionsToRun = @( `
+        "TestIsAdfsRunning", `
+        "TestIsAdfsProxyRunning", `
+        "TestSTSReachableFromProxy", `
+        "TestNoNonSelfSignedCertificatesInRootStore");
+
+    if($AdfsSslThumbprint)
+    {
+        $functionsToRun += "TestProxySslBindings -AdfsSslThumbprint $AdfsSslThumbprint";
+    }
+    else
+    {
+        $functionsToRun += "TestProxySslBindings";
+    }
+
+    return Invoke-TestFunctions -role "Proxy" -functionsToRun $functionsToRun;
 }

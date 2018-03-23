@@ -12,6 +12,7 @@ public class TestResult
     public string Detail;
     public System.Collections.Hashtable Output;
     public string ExceptionMessage;
+    public System.Exception Exception;
 
     public TestResult(string name)
     {
@@ -25,7 +26,16 @@ public enum ResultType
 {
     Pass = 0,
     Fail = 1,
-    NotRun = 2
+    NotRun = 2,
+    Error = 3,
+}
+
+public enum OSVersion
+{
+    WS2012,
+    WS2012R2,
+    WS2016,
+    Unknown
 }
 
 "@;

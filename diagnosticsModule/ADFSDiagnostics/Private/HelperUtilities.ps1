@@ -64,6 +64,31 @@ Function Get-AdfsVersion($osVersion)
     return $null
 }
 
+Function Get-OsVersion
+{
+    $OSVersion = [System.Environment]::OSVersion.Version;
+
+    if (($OSVersion.Major -eq 10) -and ($OSVersion.Minor -eq 0))
+    {
+        # Windows Server 2016
+        return [OSVersion]::WS2016;
+    }
+    elseif ($OSVersion.Major -eq 6)
+    {
+        # Windows 2012 R2
+        if ($OSVersion.Minor -ge 3)
+        {
+            return [OSVersion]::WS2012R2;
+        }
+        elseif ($OSVersion.Minor -lt 3)
+        {
+            #Windows 2012
+            return [OSVersion]::WS2012;
+        }
+    }
+    return [OSVersion]::Unknown;
+}
+
 Function Import-ADFSAdminModule()
 {
     #Used to avoid extra calls to Add-PsSnapin so DFTs function appropriately on WS 2008 R2
@@ -127,22 +152,22 @@ Function Get-AdfsRole()
     return "none"
 }
 
-
+Function Get-ServiceState($serviceName)
+{
+    return (Get-Service $serviceName -ErrorAction SilentlyContinue).Status
+}
 
 Function IsAdfsServiceRunning()
 {
-    $adfsSrv = get-service adfssrv
-
-    if ($adfsSrv -eq $null)
-    {
-        return $false
-    }
-    else
-    {
-        return ($adfsSrv.Status -eq "Running")
-    }
+    $adfsSrv = Get-ServiceState($adfsServiceName)
+    return $adfsSrv -ne $null -and ($adfsSrv -eq "Running")
 }
 
+Function IsAdfsProxyServiceRunning()
+{
+    $adfsSrv = Get-ServiceState($adfsProxyServiceName)
+    return $adfsSrv -ne $null -and ($adfsSrv -eq "Running")
+}
 
 Function GetHttpsPort
 {
@@ -282,7 +307,6 @@ Function GetObjectsFromAD ($domain, $filter)
     return $searcher.FindAll()
 }
 
-
 Function Get-FirstEnabledWIAEndpointUri()
 {
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
@@ -309,4 +333,117 @@ Function Get-ADFSIdentifier
     $fedmetadataString = $cli.DownloadString("https://" + $sslBinding.HostNamePort + "/federationmetadata/2007-06/federationmetadata.xml")
     $fedmetadata = [xml]$fedmetadataString
     return $fedmetadata.EntityDescriptor.entityID
+}
+
+Function GetSslBindings
+{
+    $output = netsh http show sslcert | ForEach-Object{$tok = $_.Split(":"); IF ($tok.Length -gt 1 -and $tok[1].TrimEnd() -ne "" -and $tok[0].StartsWith(" ")){$_}}
+    $bindings = @{};
+    $bindingName = "";
+    foreach ($bindingLine in $output)
+    {
+        $splitLine = $bindingLine.Split(":");
+        switch -WildCard ($bindingLine.Trim().ToLower())
+        {
+            "ip:port*"
+            {
+                $bindingName = $splitLine[2].Trim() + ":" + $splitLine[3].Trim();
+                $bindings[$bindingName] = @{};
+            }
+            "hostname:port*"
+            {
+                $bindingName = $splitLine[2].Trim() + ":" + $splitLine[3].Trim();
+                $bindings[$bindingName] = @{};
+            }
+            "certificate hash*"
+            {
+                $bindings[$bindingName].Add("Thumbprint", $splitLine[1].Trim());
+            }
+            "application id*"
+            {
+                $bindings[$bindingName].Add("Application ID", $splitLine[1].Trim());
+            }
+            "ctl store name*"
+            {
+                $bindings[$bindingName].Add("Ctl Store Name", $splitLine[1].Trim());
+            }
+        }
+    }
+
+    $bindings;
+}
+
+Function IsSslBindingValid
+{
+    Param
+    (
+        # The SSL bindings dictionary
+        [Parameter(Mandatory=$true)]
+        [Object]
+        $Bindings,
+        # The IP port or hostname port
+        # Format: "127.0.0.0:443" or "localhost:443"
+        [Parameter(Mandatory=$true)]
+        [string]
+        $BindingIpPortOrHostnamePort,
+        # The thumbprint of the AD FS SSL certificate
+        [Parameter(Mandatory=$true)]
+        [string]
+        $CertificateThumbprint,
+        # The test result
+        [Parameter(Mandatory=$true)]
+        [ref]
+        $TestResult,
+        # Bool to check for Ctl Store
+        [Parameter(Mandatory=$false)]
+        [boolean]
+        $VerifyCtlStoreName=$true
+    )
+
+    Write-Debug "IsSslBindingValid: Validating SSL binding for $BindingIpPortOrHostnamePort.";
+    if (!$Bindings[$BindingIpPortOrHostnamePort]) {
+        Write-Debug "ValidateSslBinding Fail: No bindings";
+        $testResult.Value.Detail = "The following SSL certificate binding could not be found $BindingIpPortOrHostnamePort.";
+        $testResult.Value.Result = [ResultType]::Fail;
+        return $false;
+    }
+
+    $binding = $Bindings[$BindingIpPortOrHostnamePort];
+
+    if ($binding["Thumbprint"] -ne $CertificateThumbprint)
+    {
+        Write-Debug "IsSslBindingValid Fail: Not matching thumbprint";
+        $testResult.Value.Detail = "The following SSL certificate binding $BindingIpPortOrHostnamePort did not match the AD FS SSL thumbprint: $CertificateThumbprint.";
+        $testResult.Value.Result = [ResultType]::Fail;
+        return $false;
+    }
+
+    if($VerifyCtlStoreName)
+    {
+        if($binding["Ctl Store Name"] -ne "AdfsTrustedDevices")
+        {
+            Write-Debug "IsSslBindingValid Fail: Not matching Ctl store name";
+            $testResult.Value.Detail = "The following SSL certificate binding $BindingIpPortOrHostnamePort did not have the correct Ctl Store Name: AdfsTrustedDevices.";
+            $testResult.Value.Result = [ResultType]::Fail;
+            return $false;
+        }
+    }
+
+    Write-Debug "IsSslBindingValid: Successfully validated SSL binding for $BindingIpPortOrHostnamePort.";
+    return $true;
+}
+
+Function IsUserPrincipalNameFormat {
+    Param
+    (
+        [string]
+        $toValidate
+    )
+
+    if([string]::IsNullOrEmpty($toValidate))
+    {
+        return $false;
+    }
+
+    return $toValidate -Match $EmailAddressRegex;
 }
