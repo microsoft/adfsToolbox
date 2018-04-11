@@ -66,8 +66,7 @@ Function TestPingFederationMetadata()
 
 Function TestSslBindings()
 {
-    $osVersion = [System.Environment]::OSVersion.Version
-    $adfsVersion = Get-AdfsVersion -osVersion $osVersion
+    $adfsVersion = Get-AdfsVersion
 
     $testName = "CheckAdfsSslBindings"
     $sslBindingsKey = "SSLBindings"
@@ -452,6 +451,11 @@ Function TestServiceAccountProperties
 
     try
     {
+        if (Test-RunningOnAdfsSecondaryServer)
+        {
+            return Create-NotRunOnSecondaryTestResult $testName
+        }
+
         $Adfssrv = get-wmiobject win32_service | where {$_.Name -eq "adfssrv"}
         $UserName = ((($Adfssrv.StartName).Split("\"))[1]).ToUpper()
         $testResult.Output.Set_Item($serviceAcctKey, $Adfssrv.StartName)
@@ -508,7 +512,7 @@ Function TestServiceAccountProperties
 
 Function TestAppPoolIDMatchesServiceID()
 {
-    $adfsVersion = Get-AdfsVersionEx
+    $adfsVersion = Get-AdfsVersion
     $testName = "TestAppPoolIDMatchesServiceID"
     $testResult = New-Object TestResult -ArgumentList ($testName)
     $pipelineModeKey = "AdfsAppPoolPipelineMode"
@@ -588,7 +592,7 @@ Function TestComputerNameEqFarmName
 
 Function TestSSLUsingADFSPort()
 {
-    $adfsVersion = Get-AdfsVersionEx
+    $adfsVersion = Get-AdfsVersion
     $testName = "TestSSLUsingADFSPort"
     $testResult = New-Object TestResult -ArgumentList ($testName)
 
@@ -657,7 +661,7 @@ Function TestSSLUsingADFSPort()
 
 Function TestSSLCertSubjectContainsADFSFarmName()
 {
-    $adfsVersion = Get-AdfsVersionEx
+    $adfsVersion = Get-AdfsVersion
     $testName = "TestSSLCertSubjectContainsADFSFarmName"
     $testResult = New-Object TestResult -ArgumentList ($testName)
     $farmNameKey = "ADFSFarmName"
@@ -787,7 +791,7 @@ Function TestAdfsAuditPolicyEnabled
 
         #and verify the STS audit setting
         $role = Get-AdfsRole
-        if ($role -eq "STS")
+        if ($role -eq $adfsRoleSTS)
         {
             $adfsSyncSetting = (Get-ADFSSyncProperties).Role
             if (IsAdfsSyncPrimaryRole)
@@ -912,7 +916,7 @@ Function TestAdfsRequestToken($retryThreshold = 5, $sleepSeconds = 3)
 Function TestTrustedDevicesCertificateStore
 {
     $testName = "TestTrustedDevicesCertificateStore";
-    Write-Debug "TestTrustedDevicesCertificateStore: Checking the AdfsTrustedDevices certificate store.";
+    Out-Verbose "Checking the AdfsTrustedDevices certificate store.";
     $testResult = New-Object TestResult -ArgumentList($testName);
 
     try
@@ -933,7 +937,7 @@ Function TestTrustedDevicesCertificateStore
 
 Function TestAdfsPatches
 {
-    Write-Debug "TestAdfsPatches: Testing for required Windows Server patches for AD FS.";
+    Out-Verbose "Testing for required Windows Server patches for AD FS.";
 
     $testName = "TestAdfsPatches";
     $patchesOutputKey = "MissingAdfsPatches";
@@ -942,11 +946,11 @@ Function TestAdfsPatches
     try
     {
         $osVersion = Get-OsVersion;
-        Write-Debug "TestAdfsPatches: Detected OS version as $osVersion.";
+        Out-Verbose "Detected OS version as $osVersion.";
 
         if ($osVersion -ne [OSVersion]::WS2012R2)
         {
-            Write-Debug "TestAdfsPatches: AD FS patches are only required for WS2012R2";
+            Out-Verbose "AD FS patches are only required for Windows Server 2012 R2";
             $testResult.Result = [ResultType]::NotRun;
             return $testResult;
         }
@@ -962,12 +966,12 @@ Function TestAdfsPatches
 
         foreach ($patch in $patches)
         {
-            Write-Debug "TestAdfsPatches: Checking patch $($patch.PatchId)";
+            Out-Verbose "Checking patch $($patch.PatchId)";
             $hotfix = Get-HotFix -Id $patch.PatchId -ErrorAction SilentlyContinue;
 
             if (!$hotfix)
             {
-                Write-Debug "Could not find the following patch: $($patch.PatchId)";
+                Out-Verbose "Could not find the following patch: $($patch.PatchId)";
                 $notinstalled += $patch;
             }
         }
@@ -990,7 +994,7 @@ Function TestAdfsPatches
 Function TestServicePrincipalName
 {
     $testName = "TestServicePrincipalName";
-    Write-Debug "$testName : Checking service principal name."
+    Out-Verbose "Checking service principal name."
 
     if (Test-RunningOnAdfsSecondaryServer)
     {
@@ -1021,10 +1025,10 @@ Function TestServicePrincipalName
             throw "ADFS Service account is null or empty. The WMI configuration is in an inconsistent state";
         }
 
-        Write-Debug "$testName : Checking format of ADFS service account. $adfsServiceAccount";
+        Out-Verbose "Checking format of ADFS service account. $adfsServiceAccount";
         if (IsUserPrincipalNameFormat($adfsServiceAccount))
         {
-            Write-Debug "$testName : Detected UPN format.";
+            Out-Verbose "Detected UPN format.";
             $serviceSamAccountParts = $adfsServiceAccount.Split('@');
             $serviceSamAccountName = $serviceSamAccountParts[0];
             $serviceAccountDomain = $serviceSamAccountParts[1];
@@ -1040,18 +1044,18 @@ Function TestServicePrincipalName
             $serviceAccountDomain = $serviceAccountParts[0];
             $serviceSamAccountName = $serviceAccountParts[1];
         }
-        Write-Debug "$testName : ADFS service account = $serviceSamAccountName";
+        Out-Verbose "ADFS service account = $serviceSamAccountName";
 
-        Write-Debug "$testName : Retrieving LDAP path of service account.";
+        Out-Verbose "Retrieving LDAP path of service account.";
         $svcAccountSearchResults = GetObjectsFromAD -domain $serviceAccountDomain -filter "(samAccountName=$serviceSamAccountName)";
         $ldapPath = $svcAccountSearchResults.Path -Replace "^LDAP://", "";
-        Write-Debug "$testName : Service account LDAP path = $ldapPath";
+        Out-Verbose "Service account LDAP path = $ldapPath";
 
         $farmName = (Retrieve-AdfsProperties).HostName;
 
-        Write-Debug "$testName : Checking existence of HOST SPN";
+        Out-Verbose "Checking existence of HOST SPN";
         $ret = Invoke-Expression "setspn -f -q HOST/$farmName";
-        Write-Debug "$testName : SPN query result = $ret";
+        Out-Verbose "SPN query result = $ret";
 
         if ($ret.Contains("No such SPN found."))
         {
@@ -1068,16 +1072,16 @@ Function TestServicePrincipalName
             return $testResult;
         }
 
-        Write-Debug "$testName : Successfully checked HOST SPN.";
+        Out-Verbose "Successfully checked HOST SPN.";
 
-        Write-Debug "$testName : Checking existence of HTTP SPN";
+        Out-Verbose "Checking existence of HTTP SPN";
         $ret = Invoke-Expression "setspn -f -q HTTP/$farmName";
-        Write-Debug "$testName : SPN query result = $ret";
+        Out-Verbose "SPN query result = $ret";
 
         if ($ret.Contains("No such SPN found."))
         {
             # HTTP does not need to resolve.
-            Write-Debug "$testName : Unable to find HTTP SPN, this does not have to resolve.";
+            Out-Verbose "Unable to find HTTP SPN, this does not have to resolve.";
             return $testResult;
         }
         elseif ($ret.Contains("Existing SPN found!") -and !$ret.Contains($ldapPath))
@@ -1094,10 +1098,100 @@ Function TestServicePrincipalName
     }
 }
 
+Function TestProxyTrustPropagation
+{
+    Param(
+        [string[]]
+        $adfsServers = $null
+    )
+
+    $testName = "TestProxyTrustPropagation";
+    try
+    {
+        $testResult = New-Object TestResult -ArgumentList $testName;
+
+        if (Test-RunningOnAdfsSecondaryServer)
+        {
+            return Create-NotRunOnSecondaryTestResult $testName;
+        }
+
+        if ($adfsServers -eq $null -or $adfsServers.Count -eq 0)
+        {
+            $testResult.Result = [ResultType]::NotRun;
+            $message = "No AD FS farm information was provided. Specify the list of servers in your farm using the -adfsServers flag.";
+            Out-Warning $message;
+            $testResult.Detail = $message;
+
+            return $testResult;
+        }
+
+        Out-Verbose "Verifying that the proxy trust is propogating between the AD FS servers in the farm.";
+        Out-Verbose "Farm information: $adfsServers";
+        $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("ADFSTrustedDevices", "LocalMachine");
+        $store.open("ReadOnly");
+
+        $certificatesInPrimaryStore = $store.Certificates;
+
+        $ErroneousCertificates = @{};
+        foreach ($server in $adfsServers)
+        {
+            $session = New-PSSession -ComputerName $server -ErrorAction SilentlyContinue;
+            if ($session -eq $null)
+            {
+                Out-Warning "There was a problem connecting to $server, skipping this server."
+                continue;
+            }
+            Out-Verbose "Checking $server";
+
+            $missingCerts = Invoke-Command -Session $session -ArgumentList @(, $certificatesInPrimaryStore) -ScriptBlock {
+                param(
+                    $certificatesInPrimaryStore
+                )
+
+                $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("ADFSTrustedDevices", "LocalMachine");
+                $store.open("ReadOnly");
+                $certificatesInStore = $store.Certificates;
+                $missingCerts = @();
+                foreach ($certificate in $certificatesInPrimaryStore)
+                {
+                    if (!$certificatesInStore.Contains($certificate))
+                    {
+                        $missingCerts += $certificate;
+                    }
+                }
+
+                return $missingCerts;
+            }
+
+            if ($missingCerts.Count -ne 0)
+            {
+                $ErroneousCertificates.Add($server, $missingCerts);
+            }
+
+            if ($session)
+            {
+                Remove-PSSession $Session
+            }
+        }
+
+        if ($ErroneousCertificates.Count -ne 0)
+        {
+            $testResult.Result = [ResultType]::Fail;
+            $testResult.Detail = "There were missing certificates on some of the secondary servers. There may be an issue with proxy trust propogation."
+            $testResult.Output = @{"ErroneousCertificates" = $ErroneousCertificates};
+        }
+
+        return $testResult;
+    }
+    catch [Exception]
+    {
+        return Create-ErrorExceptionTestResult $testName $_.Exception;
+    }
+}
+
 # Check office 365 endpoints
 Function TestOffice365Endpoints()
 {
-
     $testName = "CheckOffice365Endpoints"
 
     #Keys for strongly typed Result data

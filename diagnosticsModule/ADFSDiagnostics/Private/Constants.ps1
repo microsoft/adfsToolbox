@@ -3,11 +3,18 @@
 ####################################
 $adfs3 = "3.0";
 $adfs2x = "2.0";
+$adfsRoleSTS = "STS";
+$adfsRoleProxy = "Proxy";
 $tpKey = "Thumbprint";
 $sslCertType = "SSL";
 $adfsServiceName = "adfssrv";
 $adfsProxyServiceName = "appproxysvc";
 $adfsApplicationId = "{5d89a20c-beab-4389-9447-324788eb944a}";
+$TlsPath = "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS {0}";
+$TlsServerPath = "{0}\Server";
+$TlsClientPath = "{0}\Client";
+$timeDifferenceMaximum = 300; #seconds
+
 $none = "NONE";
 $script:adfsProperties = $null;
 $script:isAdfsSyncPrimaryRole = $null;

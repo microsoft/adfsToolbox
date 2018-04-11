@@ -25,16 +25,15 @@ Function Get-AdfsServerConfiguration
 
     $role = Get-ADFSRole
 
-    if ($role -ne "STS")
+    if ($role -ne $adfsRoleSTS)
     {
         return
     }
 
     $configurationOutput = New-Object PSObject;
 
-    # Get OS Version to determine ADFS Version
-    $OSVersion = [System.Environment]::OSVersion.Version
-    $ADFSVersion = Get-AdfsVersion($OSVersion);
+    # Get ADFS Version
+    $ADFSVersion = Get-AdfsVersion;
 
     Import-ADFSAdminModule
 
@@ -164,7 +163,6 @@ Function Get-AdfsServerConfiguration
         $adfsServiceAccount = (Get-WmiObject win32_service | Where-Object {$_.name -eq "adfssrv"}).StartName;
         $configurationOutput | Add-Member NoteProperty -name "AdfssrvServiceAccount" -value $adfsServiceAccount -Force;
 
-        $ADFSVersion = Get-AdfsVersion($OSVersion);
         $configurationOutput | Add-Member NoteProperty -name "AdfsVersion" -value $ADFSVersion -Force;
 
         try

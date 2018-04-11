@@ -76,7 +76,7 @@ Function Test-AdfsServerToken
             $appliesTo)
     }
 
-    $webresp = Invoke-WebRequest $endpoint -Method Post -Body $rst -ContentType "application/soap+xml" -UseDefaultCredentials
+    $webresp = Invoke-WebRequest $endpoint -Method Post -Body $rst -ContentType "application/soap+xml" -UseDefaultCredentials -UseBasicParsing
     $tokenXml = [xml]$webresp.Content
     return $tokenXml.OuterXml
 }

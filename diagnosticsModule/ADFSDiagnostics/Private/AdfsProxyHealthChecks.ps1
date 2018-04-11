@@ -86,30 +86,29 @@ Function TestNoNonSelfSignedCertificatesInRootStore
 Function TestProxySslBindings
 {
     Param(
-        # Parameter help description
         [Parameter(Mandatory = $true)]
         [string]
         $AdfsSslThumbprint
     )
     $testName = "TestProxySslBindings";
     $testResult = New-Object TestResult -ArgumentList($testName);
-    Write-Debug "TestProxySslBindings: Parameter AdfsSslThumbprint = $AdfsSslThumbprint";
+    Out-Verbose "Parameter AdfsSslThumbprint = $AdfsSslThumbprint";
 
     try
     {
         $bindings = GetSslBindings;
-        Write-Debug "TestProxySslBindings: Attempting to get federation service name.";
+        Out-Verbose "Attempting to get federation service name.";
         $proxyInfo = Get-WmiObject -Class ProxyService -Namespace root\ADFS
 
         $federationServiceName = $proxyInfo.HostName;
-        Write-Debug "TestProxySslBindings: Retrieved federation service name: $federationServiceName.";
+        Out-Verbose "Retrieved federation service name: $federationServiceName.";
 
         $adfsPort = $proxyInfo.HostHttpsPort;
         $tlsPort = $proxyInfo.TlsClientPort;
-        Write-Debug "Retrieved ADFS Port: $adfsPort TLS Port: $tlsPort";
+        Out-Verbose "Retrieved ADFS Port: $adfsPort TLS Port: $tlsPort";
 
         # Expected SSL bindings
-        Write-Debug "TestProxySslBinding: Attempting to validate expected SSL bindings."
+        Out-Verbose "Attempting to validate expected SSL bindings."
         $isValid = IsSslBindingValid -Bindings $bindings -BindingIpPortOrHostnamePort $($federationServiceName + ":" + $adfsPort) -CertificateThumbprint $AdfsSslThumbprint -TestResult ([ref]$testResult)
         if (!$isValid)
         {
@@ -131,7 +130,7 @@ Function TestProxySslBindings
         {
             if ($bindings[$key]["Application ID"] -eq $adfsApplicationId)
             {
-                Write-Debug "TestProxySslBinding: Checking custom SSL certificate binding $key.";
+                Out-Verbose "Checking custom SSL certificate binding $key.";
 
                 # We can only validate the Thumbprint here since we do not know which ip/hostname port this binding is for.
                 $isValid = IsSslBindingValid -Bindings $bindings -BindingIpPortOrHostnamePort $key -CertificateThumbprint $AdfsSslThumbprint -TestResult ([ref]$testResult) -VerifyCtlStoreName $false;

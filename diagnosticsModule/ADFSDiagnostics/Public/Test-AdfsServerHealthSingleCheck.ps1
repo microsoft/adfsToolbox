@@ -10,5 +10,5 @@ Function Test-AdfsServerHealthSingleCheck
 
     Import-ADFSAdminModule
     $props = Retrieve-AdfsProperties -force;
-    Invoke-TestFunctions -Role "Tests" -functionsToRun @($testFunctionName)
+    return Invoke-TestFunctions -Role "Tests" -functionsToRun @($testFunctionName)
 }

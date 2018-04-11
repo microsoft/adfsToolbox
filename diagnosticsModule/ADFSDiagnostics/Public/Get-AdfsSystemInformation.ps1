@@ -87,7 +87,7 @@ Function Get-AdfsSystemInformation()
 
     $adfsWmiProperties = @{};
 
-    if ($role -eq "STS")
+    if ($role -eq $adfsRoleSTS)
     {
         Foreach ($adfsWmiProperty in (Get-WmiObject -namespace root/ADFS -class SecurityTokenService).Properties)
         {
@@ -134,7 +134,7 @@ Function Get-AdfsSystemInformation()
         $systemOutput | Add-Member NoteProperty -name "AdfssrvServiceAccount" -value $adfsServiceAccount -Force;
     }
 
-    $ADFSVersion = Get-AdfsVersion($OSVersion);
+    $ADFSVersion = Get-AdfsVersion;
     $systemOutput | Add-Member NoteProperty -name "AdfsVersion" -value $ADFSVersion -Force;
 
     $systemOutput | Add-Member NoteProperty -name "Role" -value $role -Force;
