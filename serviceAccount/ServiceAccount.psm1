@@ -1,6 +1,161 @@
 ﻿# Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 
+
+
+#####################################################################
+####Helper functions related to rule parsing logic###################
+#####################################################################
+
+<#
+.SYNOPSIS
+    Class to encapsulate parsing of the ADFS Issuances/Auth rules.
+#>
+
+class AdfsRules
+{
+    [System.Collections.ArrayList] hidden $rules
+
+    <#
+    .SYNOPSIS
+        Constructor
+    #>
+    AdfsRules([string]$rawRules) 
+    {
+        $rulesArray = $this.ParseRules($rawRules)
+        $this.rules = New-Object "System.Collections.ArrayList"
+        $this.rules.AddRange($rulesArray)
+    }
+
+    <#
+    .SYNOPSIS
+        Utility function to parse the rules and return them as a string[].
+    #>
+    [string[]] hidden ParseRules([string]$rawRules)
+    {
+        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : BEGIN"
+
+        $allRules = @()
+        $singleRule = [string]::Empty
+
+        $rawRules.Split("`n") | %{
+            
+            $line = $_.ToString().Trim()
+
+            if (-not ([string]::IsNullOrWhiteSpace($line)) ) 
+            {
+                $singleRule += $_ + "`n"
+
+                if ($line.StartsWith("=>"))
+                {
+                    Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Parsed rule:`n$singleRule"
+                    $allRules += $singleRule
+                    $singleRule = [string]::Empty
+                }
+            }
+        }
+
+        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : END"
+
+        return $allRules
+    }
+
+    <#
+    .SYNOPSIS
+        Finds the rule by name in the format: @RuleName = "$ruleName". Returns $null if not found.
+    #>
+    [string] FindByRuleName([string]$ruleName)
+    {
+        $ruleNameSearchString = '@RuleName = "' + $ruleName + '"'
+        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Search string: $ruleNameSearchString"
+
+        foreach ($rule in $this.rules)
+        {
+            if ($rule.Contains($ruleNameSearchString))
+            {
+                Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Found.`n$rule"
+                return $rule
+            }
+        }
+
+        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : NOT FOUND. Returning $null"
+        return $null;
+    }
+
+    <#
+    .SYNOPSIS
+        Replaces the specified old rule with the new one. Returns $true if the old one was found and replaced; $false otherwise.
+    #>
+    [bool] ReplaceRule([string]$oldRule, [string]$newRule)
+    {
+        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Trying to replace old rule with new.`n Old Rule:`n$oldRule`n New Rule:`n$newRule"
+        $idx = $this.FindIndexForRule($oldRule)
+
+        if ($idx -ge 0)
+        {
+            Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Replacing old rule with new."
+            $this.rules[$idx] = $newRule
+            return $true
+        }
+
+        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Old rule is not found so NOT replacing it."
+        return $false
+    }
+
+    <#
+    .SYNOPSIS
+        Removes the specified if found. Returns $true if found; $false otherwise.
+    #>
+    [bool] RemoveRule([string]$ruleToRemove)
+    {
+        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Trying to remove rule.`n Rule:`n$ruleToRemove"
+
+        $idx = $this.FindIndexForRule($ruleToRemove)
+
+        if ($idx -ge 0)
+        {
+            Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Removing rule at index: $idx."
+            $this.rules.RemoveAt($idx)
+            return $true
+        }
+
+        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Rule is not found so NOT removing it."
+        return $false
+    }
+
+    <#
+    .SYNOPSIS
+        Helper function to find the index of the rule. Returns index if found; -1 otherwise.
+    #>
+    [int] FindIndexForRule([string]$ruleToFind)
+    {
+        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Trying to find rule.`n Rule:`n$ruleToFind"
+
+        for ($i = 0; $i -lt $this.rules.Count; $i++)
+        {
+            $rule = $this.rules[$i]
+
+            if ($rule.trim().Equals($ruleToFind.trim()))
+            {
+                Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Found at index: $i."
+                return $i
+            }
+        }
+
+        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : NOT FOUND. Returning -1"
+        return -1
+    }
+    
+    <#
+    .SYNOPSIS
+        Returns all the rules as string.
+    #>
+    [string] ToString()
+    {
+        return [string]::Join("`n", $this.rules.ToArray())
+    }
+}
+
 # Helper function - serializes any DataContract object to an XML string
 function Get-DataContractSerializedString()
 {
@@ -383,16 +538,33 @@ function Update-AdfsServiceAccountRule
     $Properties = Get-AdfsInternalSettings
 
     #Backup service settings prior to adding new rule
-    Get-DataContractSerializedString -object $Properties | Export-Clixml ./serviceSettingsData.xml
+    $BackUpPAth = ((Convert-Path .) + "\serviceSettingsData" + "-" + (get-date -f yyyy-MM-dd-hh-mm-ss) + ".xml") -replace '\s',''
+    Get-DataContractSerializedString -object $Properties | Export-Clixml $BackUpPAth
+    Write-Host ("Backup of current service settings stored at $BackUpPath")
+
 
     if($RemoveRule)
     {
         $AuthorizationPolicyRules = [AdfsRules]::new($Properties.PolicyStore.AuthorizationPolicy) 
-        $AuthorizationPolicyRules.RemoveRule($ServiceAccountRule) | Out-Null
+        if($AuthorizationPolicyRules.RemoveRule($ServiceAccountRule))
+        {
+            Write-Host "Service account $ServiceAccount with SID $SID was removed from the Authorization Policy rule set"
+        }
+        else
+        {
+             Write-Host "Service account $ServiceAccount with SID $SID was not found in the Authorization Policy rule set"
+        }
         $Properties.PolicyStore.AuthorizationPolicy = $AuthorizationPolicyRules.ToString()
 
         $AuthorizationPolicyReadOnlyRules = [AdfsRules]::new($Properties.PolicyStore.AuthorizationPolicyReadOnly) 
-        $AuthorizationPolicyReadOnlyRules.RemoveRule($ServiceAccountRule) | Out-Null
+        if($AuthorizationPolicyReadOnlyRules.RemoveRule($ServiceAccountRule))
+        {
+            Write-Host "Service account $ServiceAccount with SID $SID was removed from the Authorization Policy Read Only rule set"
+        }
+        else
+        {
+            Write-Host "Service account $ServiceAccount with SID $SID was not found in the Authorization Policy Read Only rule set"
+        }
         $Properties.PolicyStore.AuthorizationPolicyReadOnly = $AuthorizationPolicyReadOnlyRules.ToString()
 
     }
@@ -405,6 +577,7 @@ function Update-AdfsServiceAccountRule
             Write-Host "Service account rule already exists."
             return
         }
+        Write-Host "Adding rule for service account $ServiceAccount with SID $SID to Authorization Polixy and Authorization Policy Read Only rule sets"
 
         $Properties.PolicyStore.AuthorizationPolicy = $Properties.PolicyStore.AuthorizationPolicy + $ServiceAccountRule
         $Properties.PolicyStore.AuthorizationPolicyReadOnly = $Properties.PolicyStore.AuthorizationPolicyReadOnly + $ServiceAccountRule
@@ -443,165 +616,25 @@ function Update-AdfsServiceAccountRule
 
 } 
 
-#####################################################################
-####Helper functions related to rule parsing logic###################
-#####################################################################
-
-<#
-.SYNOPSIS
-    Class to encapsulate parsing of the ADFS Issuances/Auth rules.
-#>
-
-class AdfsRules
+Function UserWantsToContinue
 {
-    [System.Collections.ArrayList] hidden $rules
 
-    <#
-    .SYNOPSIS
-        Constructor
-    #>
-    AdfsRules([string]$rawRules) 
-    {
-        $rulesArray = $this.ParseRules($rawRules)
-        $this.rules = New-Object "System.Collections.ArrayList"
-        $this.rules.AddRange($rulesArray)
-    }
 
-    <#
-    .SYNOPSIS
-        Utility function to parse the rules and return them as a string[].
-    #>
-    [string[]] hidden ParseRules([string]$rawRules)
-    {
-        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : BEGIN"
-
-        $allRules = @()
-        $singleRule = [string]::Empty
-
-        $rawRules.Split("`n") | %{
-            
-            $line = $_.ToString().Trim()
-
-            if (-not ([string]::IsNullOrWhiteSpace($line)) ) 
-            {
-                $singleRule += $_ + "`n"
-
-                if ($line.StartsWith("=>"))
-                {
-                    Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Parsed rule:`n$singleRule"
-                    $allRules += $singleRule
-                    $singleRule = [string]::Empty
-                }
-            }
-        }
-
-        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : END"
-
-        return $allRules
-    }
-
-    <#
-    .SYNOPSIS
-        Finds the rule by name in the format: @RuleName = "$ruleName". Returns $null if not found.
-    #>
-    [string] FindByRuleName([string]$ruleName)
-    {
-        $ruleNameSearchString = '@RuleName = "' + $ruleName + '"'
-        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Search string: $ruleNameSearchString"
-
-        foreach ($rule in $this.rules)
-        {
-            if ($rule.Contains($ruleNameSearchString))
-            {
-                Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Found.`n$rule"
-                return $rule
-            }
-        }
-
-        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : NOT FOUND. Returning $null"
-        return $null;
-    }
-
-    <#
-    .SYNOPSIS
-        Replaces the specified old rule with the new one. Returns $true if the old one was found and replaced; $false otherwise.
-    #>
-    [bool] ReplaceRule([string]$oldRule, [string]$newRule)
-    {
-        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Trying to replace old rule with new.`n Old Rule:`n$oldRule`n New Rule:`n$newRule"
-        $idx = $this.FindIndexForRule($oldRule)
-
-        if ($idx -ge 0)
-        {
-            Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Replacing old rule with new."
-            $this.rules[$idx] = $newRule
-            return $true
-        }
-
-        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Old rule is not found so NOT replacing it."
-        return $false
-    }
-
-    <#
-    .SYNOPSIS
-        Removes the specified if found. Returns $true if found; $false otherwise.
-    #>
-    [bool] RemoveRule([string]$ruleToRemove)
-    {
-        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Trying to remove rule.`n Rule:`n$ruleToRemove"
-
-        $idx = $this.FindIndexForRule($ruleToRemove)
-
-        if ($idx -ge 0)
-        {
-            Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Removing rule at index: $idx."
-            $this.rules.RemoveAt($idx)
-            return $true
-        }
-
-        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Rule is not found so NOT removing it."
-        return $false
-    }
-
-    <#
-    .SYNOPSIS
-        Helper function to find the index of the rule. Returns index if found; -1 otherwise.
-    #>
-    [int] FindIndexForRule([string]$ruleToFind)
-    {
-        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Trying to find rule.`n Rule:`n$ruleToFind"
-
-        for ($i = 0; $i -lt $this.rules.Count; $i++)
-        {
-            $rule = $this.rules[$i]
-
-            if ($rule.trim().Equals($ruleToFind.trim()))
-            {
-                Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Found at index: $i."
-                return $i
-            }
-        }
-
-        Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : NOT FOUND. Returning -1"
-        return -1
-    }
-    
-    <#
-    .SYNOPSIS
-        Returns all the rules as string.
-    #>
-    [string] ToString()
-    {
-        return [string]::Join("`n", $this.rules.ToArray())
-    }
 }
-
 
 
 #Define functions to export
 
 
+<#
 
+.SYNOPSIS
+Module restores the AD FS service settings from a backup generated by either Add-AdfsServiceAccountRule or Remove-AdfsServiceAccountRule
+
+.EXAMPLE
+Restore-AdfsSettingsFromBackUp -BackUpPath C:\Users\Administrator\Documents\serviceSettingsData-2018-04-11-12-04-03.xml
+
+#>
 
 function Restore-AdfsSettingsFromBackup
 {
@@ -610,9 +643,39 @@ function Restore-AdfsSettingsFromBackup
         [string]$BackupPath
     )
 
+    #Receive user confirmation
+    $message  = "Confirmation required"
+    $question = "This script will will write to the AD FS configuration database. Are you sure you want to proceed?"
+
+    $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
+    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes'))
+    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No'))
+
+    $decision2 = $Host.UI.PromptForChoice($message, $question, $choices, 1)
+
+    if($decision2 -eq 1)
+    {
+        Write-Host "Terminating execution of script"
+        return
+    }
+
     $Properties = Import-Clixml $BackupPath
     Set-AdfsInternalSettings  $Properties | out-null
 }
+
+
+<#
+.SYNOPSIS
+Module adds rule permitting the speciifed service account to the AD FS rule set.
+For Windows Server 2016 and later this must be done prior to changing the service account.
+Failure to do so will render servers non-functional.
+
+.EXAMPLE
+Add-AdfsServiceAccountRule -ServiceAccount newAccount
+Add-AdfsServiceAccountRule -ServiceAccoount MyDomain\newAccount
+Add-AdfsServiceAccountRule -ServiceAccount newAccount -SecondaryServers server1, server2
+
+#>
 
 function Add-AdfsServiceAccountRule
 {
@@ -628,6 +691,19 @@ function Add-AdfsServiceAccountRule
     Update-AdfsServiceAccountRule -ServiceAccount $ServiceAccount -SecondaryServers $SecondaryServers
 }
 
+
+<#
+.SYNOPSIS
+Module deletes rule permitting the speciifed service account from the AD FS rule set.
+This can be used to disable the old service account on Windows Server 2016 and later.
+This comand should only be run once the service account has been successfully changed.
+
+.EXAMPLE
+Remove-AdfsServiceAccountRule -ServiceAccount newAccount
+Remove-AdfsServiceAccountRule -ServiceAccoount MyDomain\newAccount
+Remove-AdfsServiceAccountRule -ServiceAccount newAccount -SecondaryServers server1, server2
+
+#>
 function Remove-AdfsServiceAccountRule
 {
     param
@@ -642,7 +718,16 @@ function Remove-AdfsServiceAccountRule
     Update-AdfsServiceAccountRule -ServiceAccount $ServiceAccount -SecondaryServers $SecondaryServers -RemoveRule
 }
 
+<#
+.SYNOPSIS
+Module changes the AD FS service account.
+The script must be run locally on all seconodary servers first before running on the primary server.
+For Windows Server 2016 and later, Add-AdfsServiceAccountRule should be run prior the execution of this command.
 
+.EXAMPLE
+Update-AdfsServiceAccount
+
+#>
 function Update-AdfsServiceAccount 
 {
     $ErrorActionPreference = "silentlycontinue" 
