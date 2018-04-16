@@ -502,16 +502,8 @@ function Update-AdfsServiceAccountRule
 
 
     #Receive user confirmation
-    $message  = "Confirmation required"
-    $question = "This script will will write to the AD FS configuration database. Are you sure you want to proceed?"
 
-    $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
-    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes'))
-    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No'))
-
-    $decision2 = $Host.UI.PromptForChoice($message, $question, $choices, 1)
-
-    if($decision2 -eq 1)
+    if(UserWantsToContinue -eq 1)
     {
         Write-Host "Terminating execution of script"
         return
@@ -527,8 +519,7 @@ function Update-AdfsServiceAccountRule
     $Lookup = Get-ADUser -Filter {Name -eq $User} 
     if($Lookup -eq $null)
     {
-        Write-Error "The specified account $User does not exist"
-        return
+        throw "The specified account $User does not exist"
     }
 
 
@@ -538,8 +529,8 @@ function Update-AdfsServiceAccountRule
     $Properties = Get-AdfsInternalSettings
 
     #Backup service settings prior to adding new rule
-    $BackUpPAth = ((Convert-Path .) + "\serviceSettingsData" + "-" + (get-date -f yyyy-MM-dd-hh-mm-ss) + ".xml") -replace '\s',''
-    Get-DataContractSerializedString -object $Properties | Export-Clixml $BackUpPAth
+    $BackUpPath = ((Convert-Path .) + "\serviceSettingsData" + "-" + (get-date -f yyyy-MM-dd-hh-mm-ss) + ".xml") -replace '\s',''
+    Get-DataContractSerializedString -object $Properties | Export-Clixml $BackUpPath
     Write-Host ("Backup of current service settings stored at $BackUpPath")
 
 
@@ -577,7 +568,7 @@ function Update-AdfsServiceAccountRule
             Write-Host "Service account rule already exists."
             return
         }
-        Write-Host "Adding rule for service account $ServiceAccount with SID $SID to Authorization Polixy and Authorization Policy Read Only rule sets"
+        Write-Host "Adding rule for service account $ServiceAccount with SID $SID to Authorization Policy and Authorization Policy Read Only rule sets"
 
         $Properties.PolicyStore.AuthorizationPolicy = $Properties.PolicyStore.AuthorizationPolicy + $ServiceAccountRule
         $Properties.PolicyStore.AuthorizationPolicyReadOnly = $Properties.PolicyStore.AuthorizationPolicyReadOnly + $ServiceAccountRule
@@ -618,7 +609,17 @@ function Update-AdfsServiceAccountRule
 
 Function UserWantsToContinue
 {
+    #Receive user confirmation
+    $message  = "Confirmation required"
+    $question = "This script will will write to the AD FS configuration database. Are you sure you want to proceed?"
 
+    $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
+    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes'))
+    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No'))
+
+    $decision = $Host.UI.PromptForChoice($message, $question, $choices, 1)
+
+    return $decision
 
 }
 
@@ -644,16 +645,8 @@ function Restore-AdfsSettingsFromBackup
     )
 
     #Receive user confirmation
-    $message  = "Confirmation required"
-    $question = "This script will will write to the AD FS configuration database. Are you sure you want to proceed?"
 
-    $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
-    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes'))
-    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No'))
-
-    $decision2 = $Host.UI.PromptForChoice($message, $question, $choices, 1)
-
-    if($decision2 -eq 1)
+    if(UserWantsToContinue -eq 1)
     {
         Write-Host "Terminating execution of script"
         return
@@ -722,7 +715,7 @@ function Remove-AdfsServiceAccountRule
 .SYNOPSIS
 Module changes the AD FS service account.
 The script must be run locally on all seconodary servers first before running on the primary server.
-For Windows Server 2016 and later, Add-AdfsServiceAccountRule should be run prior the execution of this command.
+For Windows Server 2016 and later, Add-AdfsServiceAccountRule should be run prior the execution of this command
 
 .EXAMPLE
 Update-AdfsServiceAccount

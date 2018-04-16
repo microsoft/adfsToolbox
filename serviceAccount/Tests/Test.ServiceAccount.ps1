@@ -240,7 +240,7 @@ function Initialize()
     New-ServiceAccount -username $script:Service_Account_Name -password "Password"
 }
 
-Describe 'Basic functionality of Get-ADFSEven'{
+Describe 'Basic functionality of adding and removing service account rule'{
     BeforeAll {
         Initialize
     }
