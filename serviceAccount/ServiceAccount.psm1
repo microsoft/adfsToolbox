@@ -501,14 +501,6 @@ function Update-AdfsServiceAccountRule
     )
 
 
-    #Receive user confirmation
-
-    if(UserWantsToContinue -eq 1)
-    {
-        Write-Host "Terminating execution of script"
-        return
-    }
-
     #Validate provided account exists
     $User = $ServiceAccount
     if($ServiceAccount -match '\\')
@@ -566,7 +558,7 @@ function Update-AdfsServiceAccountRule
         if($AuthorizationPolicyRules.FindIndexForRule($ServiceAccountRule) -ne -1)
         {
             Write-Host "Service account rule already exists."
-            return
+            return $true
         }
         Write-Host "Adding rule for service account $ServiceAccount with SID $SID to Authorization Policy and Authorization Policy Read Only rule sets"
 
@@ -574,7 +566,15 @@ function Update-AdfsServiceAccountRule
         $Properties.PolicyStore.AuthorizationPolicyReadOnly = $Properties.PolicyStore.AuthorizationPolicyReadOnly + $ServiceAccountRule
     }
 
-    Set-AdfsInternalSettings  (Get-DataContractSerializedString -object $Properties) | out-null
+    try
+    {
+        Set-AdfsInternalSettings  (Get-DataContractSerializedString -object $Properties) | Out-Null
+    }
+    catch
+    {
+        Write-Error "There was an error writing to the configuration database"
+        retun $false
+    }
 
 
     $doc = new-object Xml
@@ -604,24 +604,10 @@ function Update-AdfsServiceAccountRule
             }
         }
     }
+    return $true
 
 } 
 
-Function UserWantsToContinue
-{
-    #Receive user confirmation
-    $message  = "Confirmation required"
-    $question = "This script will will write to the AD FS configuration database. Are you sure you want to proceed?"
-
-    $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
-    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes'))
-    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No'))
-
-    $decision = $Host.UI.PromptForChoice($message, $question, $choices, 1)
-
-    return $decision
-
-}
 
 
 #Define functions to export
@@ -639,21 +625,36 @@ Restore-AdfsSettingsFromBackUp -BackUpPath C:\Users\Administrator\Documents\serv
 
 function Restore-AdfsSettingsFromBackup
 {
+    [cmdletbinding(SupportsShouldProcess, ConfirmImpact='High')]
     param(
         [parameter(Mandatory=$true)]
         [string]$BackupPath
     )
 
-    #Receive user confirmation
+    if(-not (Test-Path $BackupPath))
+    {
+        Write-Host "The provided path to the backup file was not found."
+        return $false
+    }
 
-    if(UserWantsToContinue -eq 1)
+    #Receive user confirmation
+    if(-not $PSCmdlet.ShouldProcess("A write to the AD FS configuration database will occur", "This script will write directly to the AD FS configuration database. Are you sure you want to proceed?", "Confrim"))
     {
         Write-Host "Terminating execution of script"
-        return
+        return $false
     }
 
     $Properties = Import-Clixml $BackupPath
-    Set-AdfsInternalSettings  $Properties | out-null
+    try
+    {
+        Set-AdfsInternalSettings  $Properties | Out-Null
+    }
+    catch
+    {
+        Write-Error "There was an error writing to the configuration database"
+        return $false
+    }
+    return $true
 }
 
 
@@ -672,6 +673,7 @@ Add-AdfsServiceAccountRule -ServiceAccount newAccount -SecondaryServers server1,
 
 function Add-AdfsServiceAccountRule
 {
+    [cmdletbinding(SupportsShouldProcess, ConfirmImpact='High')]
     param
     (
         [parameter(Mandatory=$true, Position=1)]
@@ -680,6 +682,13 @@ function Add-AdfsServiceAccountRule
         [parameter(ValueFromPipeline=$True)]
         [string[]]$SecondaryServers
     )
+
+    #Receive user confirmation
+    if(-not $PSCmdlet.ShouldProcess("A write to the AD FS configuration database will occur", "This script will write directly to the AD FS configuration database. Are you sure you want to proceed?", "Confrim"))
+    {
+        Write-Host "Terminating execution of script"
+        return $false
+    }
 
     Update-AdfsServiceAccountRule -ServiceAccount $ServiceAccount -SecondaryServers $SecondaryServers
 }
@@ -699,6 +708,7 @@ Remove-AdfsServiceAccountRule -ServiceAccount newAccount -SecondaryServers serve
 #>
 function Remove-AdfsServiceAccountRule
 {
+    [cmdletbinding(SupportsShouldProcess, ConfirmImpact='High')]
     param
     (
         [parameter(Mandatory=$true, Position=1)]
@@ -707,6 +717,13 @@ function Remove-AdfsServiceAccountRule
         [parameter(ValueFromPipeline=$True)]
         [string[]]$SecondaryServers
     )
+
+    #Receive user confirmation
+    if(-not $PSCmdlet.ShouldProcess("A write to the AD FS configuration database will occur", "This script will write directly to the AD FS configuration database. Are you sure you want to proceed?", "Confrim"))
+    {
+        Write-Host "Terminating execution of script"
+        return $false
+    }
 
     Update-AdfsServiceAccountRule -ServiceAccount $ServiceAccount -SecondaryServers $SecondaryServers -RemoveRule
 }
