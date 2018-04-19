@@ -82,10 +82,14 @@ Function Get-AdfsVersion
     }
     return $null
 }
+Function EnvOSVersionWrapper
+{
+    return [System.Environment]::OSVersion.Version;
+}
 
 Function Get-OsVersion
 {
-    $OSVersion = [System.Environment]::OSVersion.Version;
+    $OSVersion = EnvOSVersionWrapper
 
     if (($OSVersion.Major -eq 10) -and ($OSVersion.Minor -eq 0))
     {
@@ -353,10 +357,14 @@ Function Get-ADFSIdentifier
     $fedmetadata = [xml]$fedmetadataString
     return $fedmetadata.EntityDescriptor.entityID
 }
+Function NetshHttpShowSslcert
+{
+    return (netsh http show sslcert)
+}
 
 Function GetSslBindings
 {
-    $output = netsh http show sslcert | ForEach-Object {$tok = $_.Split(":"); IF ($tok.Length -gt 1 -and $tok[1].TrimEnd() -ne "" -and $tok[0].StartsWith(" ")) {$_}}
+    $output = NetshHttpShowSslcert | ForEach-Object {$tok = $_.Split(":"); IF ($tok.Length -gt 1 -and $tok[1].TrimEnd() -ne "" -and $tok[0].StartsWith(" ")) {$_}}
     $bindings = @{};
     $bindingName = "";
     foreach ($bindingLine in $output)
@@ -409,23 +417,21 @@ Function IsSslBindingValid
         [Parameter(Mandatory = $true)]
         [string]
         $CertificateThumbprint,
-        # The test result
-        [Parameter(Mandatory = $true)]
-        [ref]
-        $TestResult,
         # Bool to check for Ctl Store
         [Parameter(Mandatory = $false)]
         [boolean]
         $VerifyCtlStoreName = $true
     )
 
+    $returnVal = @{}
+
     Out-Verbose "Validating SSL binding for $BindingIpPortOrHostnamePort.";
     if (!$Bindings[$BindingIpPortOrHostnamePort])
     {
         Out-Verbose "Fail: No binding could be found with $BindingIpPortOrHostnamePort";
-        $testResult.Value.Detail = "The following SSL certificate binding could not be found $BindingIpPortOrHostnamePort.";
-        $testResult.Value.Result = [ResultType]::Fail;
-        return $false;
+        $returnVal["Detail"] = "The following SSL certificate binding could not be found $BindingIpPortOrHostnamePort.";
+        $returnVal["IsValid"] = $false;
+        return $returnVal;
     }
 
     $binding = $Bindings[$BindingIpPortOrHostnamePort];
@@ -433,24 +439,22 @@ Function IsSslBindingValid
     if ($binding["Thumbprint"] -ne $CertificateThumbprint)
     {
         Out-Verbose "Fail: Not matching thumbprint";
-        $testResult.Value.Detail = "The following SSL certificate binding $BindingIpPortOrHostnamePort did not match the AD FS SSL thumbprint: $CertificateThumbprint.";
-        $testResult.Value.Result = [ResultType]::Fail;
-        return $false;
+        $returnVal["Detail"] = "The following SSL certificate binding $BindingIpPortOrHostnamePort did not match the AD FS SSL thumbprint: $CertificateThumbprint.";
+        $returnVal["IsValid"] = $false;
+        return $returnVal;
     }
 
-    if ($VerifyCtlStoreName)
+    if ($VerifyCtlStoreName -and $binding["Ctl Store Name"] -ne $ctlStoreName)
     {
-        if ($binding["Ctl Store Name"] -ne "AdfsTrustedDevices")
-        {
-            Out-Verbose "Fail: Not matching Ctl store name";
-            $testResult.Value.Detail = "The following SSL certificate binding $BindingIpPortOrHostnamePort did not have the correct Ctl Store Name: AdfsTrustedDevices.";
-            $testResult.Value.Result = [ResultType]::Fail;
-            return $false;
-        }
+        Out-Verbose "Fail: Not matching Ctl store name";
+        $returnVal["Detail"] = "The following SSL certificate binding $BindingIpPortOrHostnamePort did not have the correct Ctl Store Name: AdfsTrustedDevices.";
+        $returnVal["IsValid"] = $false;
+        return $returnVal;
     }
 
     Out-Verbose "Successfully validated SSL binding for $BindingIpPortOrHostnamePort.";
-    return $true;
+    $returnVal["IsValid"] = $true;
+    return $returnVal;
 }
 
 Function IsUserPrincipalNameFormat
@@ -500,12 +504,17 @@ Function IsTlsVersionEnabled($version)
     return $true;
 }
 
+Function GetValueFromRegistryKey($key, $name)
+{
+    return $key.GetValue($name);
+}
+
 Function IsTlsVersionEnabledInternal($path)
 {
     Out-Verbose "Checking if version is enabled for $path";
-    $key = Get-Item -LiteralPath $clientPath;
-    $enabled = $key.GetValue("Enabled");
-    $disabledByDefault = $key.GetValue("DisabledByDefault");
+    $key = Get-Item -LiteralPath $path;
+    $enabled = GetValueFromRegistryKey $key "Enabled"
+    $disabledByDefault = GetValueFromRegistryKey $key "DisabledByDefault"
     Out-Verbose "Enabled = $enabled";
     Out-Verbose "DisabledByDefault = $disabledByDefault";
     if (($enabled -ne $null -and $enabled -eq 0) -and ($disabledByDefault -ne $null -and $disabledByDefault -eq 1))
@@ -548,4 +557,26 @@ Function IsServerTimeInSyncWithReliableTimeServer
     }
 
     return $true;
+}
+
+Function GetCertificatesFromAdfsTrustedDevices
+{
+    $store = New-Object System.Security.Cryptography.X509Certificates.X509Store($ctlStoreName, $localMachine);
+    $store.open("ReadOnly");
+    return $store.Certificates;
+}
+
+Function VerifyCertificatesArePresent($certificatesInPrimaryStore)
+{
+    $certificatesInStore = @(GetCertificatesFromAdfsTrustedDevices);
+    $missingCerts = @();
+    foreach ($certificate in $certificatesInPrimaryStore)
+    {
+        if (!$certificatesInStore.Contains($certificate))
+        {
+            $missingCerts += $certificate;
+        }
+    }
+
+    return $missingCerts;
 }

@@ -1019,7 +1019,7 @@ Function TestServicePrincipalName
             return $testResult;
         }
 
-        $adfsServiceAccount = (Get-WmiObject win32_service | Where-Object {$_.name -eq "adfssrv"}).StartName;
+        $adfsServiceAccount = (Get-WmiObject win32_service | Where-Object {$_.name -eq $adfsServiceName}).StartName;
         if ([String]::IsNullOrWhiteSpace($adfsServiceAccount))
         {
             throw "ADFS Service account is null or empty. The WMI configuration is in an inconsistent state";
@@ -1082,15 +1082,14 @@ Function TestServicePrincipalName
         {
             # HTTP does not need to resolve.
             Out-Verbose "Unable to find HTTP SPN, this does not have to resolve.";
-            return $testResult;
         }
         elseif ($ret.Contains("Existing SPN found!") -and !$ret.Contains($ldapPath))
         {
             $testResult.Result = [ResultType]::Fail;
             $testResult.Detail = "An existing SPN was found for HTTP/$farmName but it did not resolve to the ADFS service account.";
-
-            return $testResult;
         }
+
+        return $testResult
     }
     catch [Exception]
     {
@@ -1117,7 +1116,7 @@ Function TestProxyTrustPropagation
 
         if ($adfsServers -eq $null -or $adfsServers.Count -eq 0)
         {
-            $testResult.Result = [ResultType]::NotRun;
+            $testResult.Result = [ResultType]::Warning;
             $message = "No AD FS farm information was provided. Specify the list of servers in your farm using the -adfsServers flag.";
             Out-Warning $message;
             $testResult.Detail = $message;
@@ -1127,10 +1126,8 @@ Function TestProxyTrustPropagation
 
         Out-Verbose "Verifying that the proxy trust is propogating between the AD FS servers in the farm.";
         Out-Verbose "Farm information: $adfsServers";
-        $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("ADFSTrustedDevices", "LocalMachine");
-        $store.open("ReadOnly");
 
-        $certificatesInPrimaryStore = $store.Certificates;
+        $certificatesInPrimaryStore = @(GetCertificatesFromAdfsTrustedDevices);
 
         $ErroneousCertificates = @{};
         foreach ($server in $adfsServers)
@@ -1141,27 +1138,18 @@ Function TestProxyTrustPropagation
                 Out-Warning "There was a problem connecting to $server, skipping this server."
                 continue;
             }
-            Out-Verbose "Checking $server";
 
-            $missingCerts = Invoke-Command -Session $session -ArgumentList @(, $certificatesInPrimaryStore) -ScriptBlock {
+            Out-Verbose "Checking $server";
+            $def = "Function VerifyCertificatesArePresent { ${function:VerifyCertificatesArePresent} }; Function GetCertificatesFromAdfsTrustedDevices { ${function:GetCertificatesFromAdfsTrustedDevices} }"
+            $missingCerts = Invoke-Command -Session $session -ScriptBlock {
                 param(
-                    $certificatesInPrimaryStore
+                    $certificatesInPrimaryStore,
+                    $functionDefinition
                 )
 
-                $store = New-Object System.Security.Cryptography.X509Certificates.X509Store("ADFSTrustedDevices", "LocalMachine");
-                $store.open("ReadOnly");
-                $certificatesInStore = $store.Certificates;
-                $missingCerts = @();
-                foreach ($certificate in $certificatesInPrimaryStore)
-                {
-                    if (!$certificatesInStore.Contains($certificate))
-                    {
-                        $missingCerts += $certificate;
-                    }
-                }
-
-                return $missingCerts;
-            }
+                Invoke-Expression $functionDefinition;
+                return VerifyCertificatesArePresent -certificatesInPrimaryStore $certificatesInPrimaryStore
+            } -ArgumentList @($certificatesInPrimaryStore, $def)
 
             if ($missingCerts.Count -ne 0)
             {

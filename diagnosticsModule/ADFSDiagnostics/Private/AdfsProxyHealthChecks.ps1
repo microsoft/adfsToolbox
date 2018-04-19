@@ -66,7 +66,7 @@ Function TestNoNonSelfSignedCertificatesInRootStore
 
     try
     {
-        $nonSelfSignedCertificates = Get-ChildItem Cert:\LocalMachine\root -Recurse | Where-Object {$_.Issuer -ne $_.Subject} | Select-Object FriendlyName, Thumbprint, Subject;
+        $nonSelfSignedCertificates = Get-ChildItem Cert:\LocalMachine\root -Recurse | Where-Object {$_.Issuer -ne $_.Subject} | Select-Object FriendlyName, Issuer, Subject, Thumbprint;
 
         if ($nonSelfSignedCertificates.Count -ne 0)
         {
@@ -107,20 +107,22 @@ Function TestProxySslBindings
         $tlsPort = $proxyInfo.TlsClientPort;
         Out-Verbose "Retrieved ADFS Port: $adfsPort TLS Port: $tlsPort";
 
+        $erroneousBindings = @{}
+
         # Expected SSL bindings
         Out-Verbose "Attempting to validate expected SSL bindings."
-        $isValid = IsSslBindingValid -Bindings $bindings -BindingIpPortOrHostnamePort $($federationServiceName + ":" + $adfsPort) -CertificateThumbprint $AdfsSslThumbprint -TestResult ([ref]$testResult)
-        if (!$isValid)
+        $ret = IsSslBindingValid -Bindings $bindings -BindingIpPortOrHostnamePort $($federationServiceName + ":" + $adfsPort) -CertificateThumbprint $AdfsSslThumbprint
+        if (!($ret.IsValid))
         {
-            return $testResult;
+            $erroneousBindings[$($federationServiceName + ":" + $adfsPort)] = $ret["Detail"];
         }
 
         $bindings.Remove($($federationServiceName + ":" + $adfsPort));
 
-        $isValid = IsSslBindingValid -Bindings $bindings -BindingIpPortOrHostnamePort $($federationServiceName + ":" + $tlsPort) -CertificateThumbprint $AdfsSslThumbprint -TestResult ([ref]$testResult) -VerifyCtlStoreName $false;
-        if (!$isValid)
+        $ret = IsSslBindingValid -Bindings $bindings -BindingIpPortOrHostnamePort $($federationServiceName + ":" + $tlsPort) -CertificateThumbprint $AdfsSslThumbprint -VerifyCtlStoreName $false;
+        if (!($ret.IsValid))
         {
-            return $testResult;
+            $erroneousBindings[$($federationServiceName + ":" + $tlsPort)] = $ret["Detail"];
         }
 
         $bindings.Remove($($federationServiceName + ":" + $tlsPort));
@@ -133,12 +135,19 @@ Function TestProxySslBindings
                 Out-Verbose "Checking custom SSL certificate binding $key.";
 
                 # We can only validate the Thumbprint here since we do not know which ip/hostname port this binding is for.
-                $isValid = IsSslBindingValid -Bindings $bindings -BindingIpPortOrHostnamePort $key -CertificateThumbprint $AdfsSslThumbprint -TestResult ([ref]$testResult) -VerifyCtlStoreName $false;
-                if (!$isValid)
+                $ret = IsSslBindingValid -Bindings $bindings -BindingIpPortOrHostnamePort $key -CertificateThumbprint $AdfsSslThumbprint -VerifyCtlStoreName $false;
+                if (!($ret.IsValid))
                 {
-                    return $testResult;
+                    $erroneousBindings[$key] = $ret["Detail"];
                 }
             }
+        }
+
+        if ($erroneousBindings.Count -ne 0)
+        {
+            $testResult.Result = [ResultType]::Fail;
+            $testResult.Detail = "There were SSL bindings found that were incorrect. Check the output for more detail.";
+            $testResult.Output = @{"ErroneousBindings" = $erroneousBindings};
         }
 
         return $testResult;

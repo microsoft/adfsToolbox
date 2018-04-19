@@ -223,6 +223,8 @@ Function TestTimeSync
                         {
                             $serversNotInSync += $server;
                         }
+
+                        Remove-PSSession $session
                     }
 
                     if ($serversNotInSync.Count -ne 0)
