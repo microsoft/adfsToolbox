@@ -135,7 +135,7 @@ class AdfsRules
         {
             $rule = $this.rules[$i]
 
-            if ($rule.trim().Equals($ruleToFind.trim()))
+            if ($rule.Replace(' ','').trim() -eq $ruleToFind.Replace(' ','').trim())
             {
                 Write-Verbose "$($PSCmdlet.MyInvocation.MyCommand) : Found at index: $i."
                 return $i
