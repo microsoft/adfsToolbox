@@ -311,3 +311,13 @@ provided by the bot. You will only need to do this once across all repos using o
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
 For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
 contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+
+### Integration Testing
+This project includes a set of Pester tests to ensure the basic functionality of this module. These tests should only be run by those making changes to the module. To run the tests, you must have Pester version 4.x or higher installed on the machine.
+
+Run `Test-ADFSDiagnostics.ps1`. This will automatically enumerate and run all of the Pester tests within the Test folder.
+
+Additionally, you can use `Test-ADFSDiagnostics.ps1 -CodeCoverage` to perform code coverage.
+
+#### Adding new tests
+All of the Pester tests are located in the `Test` folder. This folder follows the same structure as the ADFSDiagnostics root folder. Each pester test file should have `.Test` appended to the end of it. For example if you wanted to write tests for Filename.ps1 located in the Private folder, you should add Filename.Test.ps1 to the Private folder located in the Test folder.
