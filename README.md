@@ -6,7 +6,9 @@ This repository contains tools for helping you manage your AD FS farm. The follo
 
 1. __[diagnosticsModule](diagnosticsModule)__ - PowerShell script to do basic health checks against AD FS. Determines if AD FS is in a healthy state.
 
-2. __[widSync](widSync)__ - PowerShell script to force a full WID sync to an AD FS secondary node
+2. __[serviceAccount](serviceAccount)__ - PowerShell module to change the AD FS service account.
+
+3. __[widSync](widSync)__ - PowerShell script to force a full WID sync to an AD FS secondary node
 
 ## Contributing
 
