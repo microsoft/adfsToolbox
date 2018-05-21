@@ -1140,13 +1140,12 @@ Function TestProxyTrustPropagation
             }
 
             Out-Verbose "Checking $server";
-            $def = "Function VerifyCertificatesArePresent { ${function:VerifyCertificatesArePresent} }; Function GetCertificatesFromAdfsTrustedDevices { ${function:GetCertificatesFromAdfsTrustedDevices} }"
+            $def = "`$ctlStoreName = `"$ctlStoreName`"; `$localMachine = `"$localMachine`"; Function VerifyCertificatesArePresent { ${function:VerifyCertificatesArePresent} }; Function GetCertificatesFromAdfsTrustedDevices { ${function:GetCertificatesFromAdfsTrustedDevices} }"
             $missingCerts = Invoke-Command -Session $session -ScriptBlock {
                 param(
                     $certificatesInPrimaryStore,
                     $functionDefinition
                 )
-
                 Invoke-Expression $functionDefinition;
                 return VerifyCertificatesArePresent -certificatesInPrimaryStore $certificatesInPrimaryStore
             } -ArgumentList @($certificatesInPrimaryStore, $def)

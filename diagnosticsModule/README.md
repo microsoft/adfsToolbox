@@ -153,6 +153,9 @@ This module provides cmdlets that can be used to perform various tests on AD FS 
 * **FederationServer**: Federation Server (Farm) host name Federation Server (Farm) host name
 * **AppliesTo**: Identifier of the target relying party
 * **Credential**: Optional Username Credential used to retrieve the token
+* **TestTls10**: Optional switch to specify performing a synthetic transaction using Tls 1.0
+* **TestTls11**: Optional switch to specify performing a synthetic transaction using Tls 1.1
+* **TestTls12**: Optional switch to specify performing a synthetic transaction using Tls 1.2
 
 **Usage**: `Test-AdfsServerToken -FederationServer sts.contoso.com -AppliesTo urn:examplerpt`
 
@@ -315,9 +318,11 @@ contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additio
 ### Integration Testing
 This project includes a set of Pester tests to ensure the basic functionality of this module. These tests should only be run by those making changes to the module. To run the tests, you must have Pester version 4.x or higher installed on the machine.
 
-Run `Test-ADFSDiagnostics.ps1`. This will automatically enumerate and run all of the Pester tests within the Test folder.
+Run `.\build.ps1 -Task Test` to automatically enumerate and run all of the Pester tests within the Test folder.
 
-Additionally, you can use `Test-ADFSDiagnostics.ps1 -CodeCoverage` to perform code coverage.
+Additionally, you can use `.\build.ps1 -Task Test -CodeCoverage` to perform code coverage.
+
+We also enforce PSScriptAnalyzer rules, you must run `.\build.ps1 -Task Analyze`.
 
 #### Adding new tests
 All of the Pester tests are located in the `Test` folder. This folder follows the same structure as the ADFSDiagnostics root folder. Each pester test file should have `.Test` appended to the end of it. For example if you wanted to write tests for Filename.ps1 located in the Private folder, you should add Filename.Test.ps1 to the Private folder located in the Test folder.

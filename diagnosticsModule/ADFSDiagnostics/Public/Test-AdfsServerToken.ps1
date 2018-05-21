@@ -5,7 +5,7 @@ Performs a synthetic transaction to get a token against an AD FS farm
 .DESCRIPTION
 If a credential  is provided, then the 2005/usernamemixed Endpoint will be used to get the token.
 Otherwise, the 2005/windowstransport endpoint will be used with the windows identity of the logged on user.
-The token is returned in XML format
+The token is returned in XML format. By default this cmdlet will perform three transactions using Tls 1.0, Tls 1.1, and Tls 1.2.
 
 .PARAMETER FederationServer
 Federation Server (Farm) host name
@@ -15,6 +15,15 @@ Identifier of the target relying party
 
 .PARAMETER Credential
 Optional Username Credential used to retrieve the token
+
+.PARAMETER TestTls10
+Optional switch to specify performing a synthetic transaction using Tls 1.0
+
+.PARAMETER TestTls11
+Optional switch to specify performing a synthetic transaction using Tls 1.1
+
+.PARAMETER TestTls12
+Optional switch to specify performing a synthetic transaction using Tls 1.2
 
 .EXAMPLE
 Test-AdfsServerToken -FederationServer sts.contoso.com -AppliesTo urn:payrollapp
@@ -31,12 +40,16 @@ $tokenXml.Envelope.Body.RequestSecurityTokenResponse.RequestedSecurityToken.Asse
 
 Retrieves a token, and see the claims in the attribute statement in a table format
 
+.EXAMPLE
+Test-AdfsServerToken -FederationServer sts.contoso.com -AppliesTo urn:payrollapp -TestTls10 -TestTls11
+Perform two synthetic transactions using Tls 1.0 and Tls 1.1 for the relying party with identifier urn:payrollapp against the farm 'sts.contoso.com' with logged on user windows credentials.
 
 .NOTES
 If credential parameter is provided, then the 2005/usernamemixed Endpoint needs to be enabled
 Otherwise, the 2005/windowstransport endpoint needs to be enabled
 
 #>
+
 Function Test-AdfsServerToken
 {
     param
@@ -50,8 +63,18 @@ Function Test-AdfsServerToken
         $AppliesTo,
 
         [Parameter(Mandatory = $false)]
-        $Credential
+        $Credential,
+
+        [Switch]
+        $TestTls10,
+
+        [Switch]
+        $TestTls11,
+
+        [Switch]
+        $TestTls12
     )
+
     $rst = $null
     $endpoint = $null
 
@@ -76,7 +99,43 @@ Function Test-AdfsServerToken
             $appliesTo)
     }
 
-    $webresp = Invoke-WebRequest $endpoint -Method Post -Body $rst -ContentType "application/soap+xml" -UseDefaultCredentials -UseBasicParsing
+    $oldProtocol = [Net.ServicePointManager]::SecurityProtocol
+    $protocolsToTest = @();
+    if (!($TestTls10) -and !($TestTls11) -and !($TestTls12))
+    {
+        $protocolsToTest = @($Tls10, $Tls11, $Tls12)
+    }
+
+    if ($TestTls10)
+    {
+        $protocolsToTest += $Tls10
+    }
+
+    if ($TestTls11)
+    {
+        $protocolsToTest += $Tls11
+    }
+
+    if ($TestTls12)
+    {
+        $protocolsToTest += $Tls12
+    }
+
+
+    $protocolsToTest | ForEach-Object {
+        try
+        {
+            [Net.ServicePointManager]::SecurityProtocol = $_
+            $webresp = Invoke-WebRequest $endpoint -Method Post -Body $rst -ContentType "application/soap+xml" -UseDefaultCredentials -UseBasicParsing
+            Write-Host "Successfully performed a synthetic transaction to get a token using TLS version: $_"
+        }
+        catch [Net.WebException]
+        {
+            Out-Warning "Unable to perform a synthetic transaction to get a token using TLS version: $_"
+        }
+    }
+
+    [Net.ServicePointManager]::SecurityProtocol = $oldProtocol
     $tokenXml = [xml]$webresp.Content
     return $tokenXml.OuterXml
 }
