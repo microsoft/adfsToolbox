@@ -1435,7 +1435,10 @@ function Get-ADFSEvents
     [string[]]$Server="LocalHost",
 
     [parameter(Mandatory=$false, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
-    [string]$FilePath
+    [string]$FilePath,
+    
+    [parameter(Mandatory=$false, ValueFromPipeline=$True, ValueFromPipelineByPropertyName=$True)]
+    [PSCredential]$Credential
     )
 
     # TODO: Add warning if environment is not Win2016
@@ -1492,7 +1495,7 @@ function Get-ADFSEvents
 
         Try
         {
-            $Session = New-PSSession -ComputerName $Machine
+            $Session = New-PSSession -ComputerName $Machine -Credential $Credential
             $Events += QueryDesiredLogs -CorrID $CorrelationID -Session $Session -ByTime $ByTime -Start $StartTime.ToUniversalTime() -End $EndTime.ToUniversalTime() -IncludeLinkedInstances $includeLinks -FilePath $FilePath
         }
         Catch
