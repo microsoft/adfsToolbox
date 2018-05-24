@@ -1495,7 +1495,15 @@ function Get-ADFSEvents
 
         Try
         {
-            $Session = New-PSSession -ComputerName $Machine -Credential $Credential
+            $Session = $null
+            if ( $Credential -eq $null )
+            {
+                $Session = New-PSSession -ComputerName $Machine 
+            }
+            else
+            {
+                $Session = New-PSSession -ComputerName $Machine -Credential $Credential
+            }
             $Events += QueryDesiredLogs -CorrID $CorrelationID -Session $Session -ByTime $ByTime -Start $StartTime.ToUniversalTime() -End $EndTime.ToUniversalTime() -IncludeLinkedInstances $includeLinks -FilePath $FilePath
         }
         Catch
