@@ -488,7 +488,7 @@ function MakeQuery
         #
         $instanceIdsToQuery = @{}
 
-        foreach ( $Event in $Result )
+        foreach ( $Event in $Result | Where { $null -ne $_ } )
         {
             # Copy over all properties so they remain accessible when remote session terminates
 
