@@ -353,6 +353,7 @@ Function Get-ADFSIdentifier
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
     $cli = New-Object net.WebClient;
     $sslBinding = GetSslBinding
+    $cli.Encoding = [System.Text.Encoding]::UTF8
     $fedmetadataString = $cli.DownloadString("https://" + $sslBinding.HostNamePort + "/federationmetadata/2007-06/federationmetadata.xml")
     $fedmetadata = [xml]$fedmetadataString
     return $fedmetadata.EntityDescriptor.entityID
