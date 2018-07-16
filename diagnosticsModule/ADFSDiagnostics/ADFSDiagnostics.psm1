@@ -8,7 +8,7 @@
 
 .DESCRIPTION
 
-    Version: 2.1.0
+    Version: 3.0.0
 
     ADFSDiagnostics.psm1 is a Windows PowerShell module for diagnosing issues with ADFS
 
@@ -22,7 +22,7 @@
     Copyright (c) Microsoft Corporation. All rights reserved.
 #>
 
-$ModuleVersion = "2.1.0"
+$Script:ModuleVersion = "3.0.0"
 
 $url = "https://api.github.com/repos/Microsoft/adfsManagementTools/releases/latest"
 $oldProtocol = [Net.ServicePointManager]::SecurityProtocol

@@ -581,3 +581,114 @@ Function VerifyCertificatesArePresent($certificatesInPrimaryStore)
 
     return $missingCerts;
 }
+
+function GenerateDiagnosticData()
+{
+    Param
+    (
+        [switch]    $includeTrusts,
+        [string]    $sslThumbprint,
+        [string[]]  $adfsServers,
+        [switch]    $local
+    )
+    
+    # configs
+    # cmdlets to be run and have results output into the diagnostic file
+    # structured as follows:
+    # modules = @{module1 = @{cmdlet1.1 = arrayList of arguments,
+    #                         cmdlet1.2 = arrayList of arguments, ...}
+    #             module2 = @{cmdlet2.1 = arrayList of arguments, ...}
+    #             ...
+    #            }
+    # (the arguments will be joined and run with the cmdlet.)
+    $modules =
+        @{ADFSDiagnostics = 
+            @{
+                'Test-AdfsServerHealth' = New-Object System.Collections.ArrayList;
+            };
+        };
+        
+    # version number of the output (updated when the function is changed)
+    $outputVersion = $Script:ModuleVersion
+    # end configs
+    
+    Out-Verbose "Binding each argument to relevant cmdlets"
+    if ($includeTrusts)
+    {
+        $modules['ADFSDiagnostics']['Test-AdfsServerHealth'].Add('-includeTrusts') > $null
+    }
+
+    if ($sslThumbprint)
+    {
+        $modules['ADFSDiagnostics']['Test-AdfsServerHealth'].Add(-join('-sslThumbprint ', $sslThumbprint)) > $null
+    }
+
+    if ($adfsServers)
+    {
+        $modules['ADFSDiagnostics']['Test-AdfsServerHealth'].Add(-join('-AdfsServers ', $adfsServers)) > $null
+    }
+
+    if ($local)
+    {
+        $modules['ADFSDiagnostics']['Test-AdfsServerHealth'].Add('-local') > $null
+    }
+
+    # create aggregate object to store diagnostic output from each cmdlet run
+    $diagnosticData = New-Object -TypeName PSObject
+
+    foreach($module in $modules.keys)
+    {
+        $moduleData = New-Object -TypeName PSObject
+        foreach($cmdlet in (($modules[$module]).keys))
+        {
+            # join the arguments together
+            $args = $modules[$module][$cmdlet]-join -' '
+
+            # join the command with the arguments
+            $cmd = -join($module,'\', $cmdlet, ' ', $args)
+
+            # upon success, add the cmdlet results;
+            # otherwise add the error message
+            Out-Verbose "Attempting to run cmdlet $cmdlet"
+            try
+            {
+                $res = (Invoke-Expression -Command $cmd)
+                Add-Member -InputObject $moduleData -MemberType NoteProperty -Name $cmdlet -Value $res
+                Add-Member -InputObject $diagnosticData -MemberType NoteProperty -Name $module -Value $moduleData
+                Out-Verbose "Successfully ran cmdlet $cmdlet"
+            }
+            catch
+            {
+                Write-Error -Message (-join("Error running cmdlet ", $cmd, ": ", $_.Exception.Message))
+                return $null
+            }
+        }
+    }
+
+    # add the cmdlet version to the output
+    Add-Member -InputObject $diagnosticData -MemberType NoteProperty -Name "Version" -Value $outputVersion
+
+    return $diagnosticData
+}
+
+function GenerateJSONDiagnosticData()
+{
+    Param
+    (
+        [switch]    $includeTrusts,
+        [string]    $sslThumbprint,
+        [string[]]  $adfsServers,
+        [switch]    $local
+    )
+
+    # configs
+    # maximum global JSON depth in the diagnostic file
+    $jsonDepth = 8
+    # end configs
+
+    Out-Verbose "Generating diagnostic data"
+    $diagnosticData = GenerateDiagnosticData -includeTrusts:$includeTrusts -sslThumbprint $sslThumbprint -adfsServers $adfsServers -local:$local;
+    Out-Verbose "Successfully generated diagnostic data"
+
+    return ConvertTo-JSON -InputObject $diagnosticData -Depth $jsonDepth
+}

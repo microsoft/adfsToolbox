@@ -129,7 +129,7 @@ Function Get-AdfsServerConfiguration
 
         try
         {
-            $adfsClaimsProviderTrustCount = 0
+            $adfsRelyingPartyTrustCount = 0
             $adfsRelyingPartyTrustCount = (Get-AdfsRelyingPartyTrust).Count;
 
             $configurationOutput | Add-Member NoteProperty -name "ADFSRelyingPartyTrustCount" -value $adfsRelyingPartyTrustCount -Force;
@@ -157,7 +157,7 @@ Function Get-AdfsServerConfiguration
         }
         catch [Exception]
         {
-            $configurationOutput | Add-Member NoteProperty -name "ADFSConfigurationDatabaseConnectionStringy" -value "SCRIPTERROR: $_.Exception.Message" -Force;
+            $configurationOutput | Add-Member NoteProperty -name "ADFSConfigurationDatabaseConnectionString" -value "SCRIPTERROR: $_.Exception.Message" -Force;
         }
 
         $adfsServiceAccount = (Get-WmiObject win32_service | Where-Object {$_.name -eq "adfssrv"}).StartName;

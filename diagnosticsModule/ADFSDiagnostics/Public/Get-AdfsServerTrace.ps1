@@ -4,7 +4,7 @@ Retrieves all the AD FS events generated given an Activity ID ID accross differe
 
 .DESCRIPTION
 The Get-ADFSActivityIdRecords cmdlet queries all computers' event logs for the activity ID supplied in parallel, and them combines and sorts the results.
-This cmdlets works in AD FS 2.0 and later.
+This cmdlet works in AD FS 2.0 and later.
 
 
 .PARAMETER ActivityId

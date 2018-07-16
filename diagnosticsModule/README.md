@@ -45,6 +45,7 @@ This module provides cmdlets that can be used to perform various tests on AD FS 
 2. `Get-AdfsServerConfiguration`: This command takes a snapshot of the AD FS farm configuration and relevant dependencies
 3. `Test-AdfsServerToken`: This command verifies if you can reach AD FS service and get a token issued for the credentials supplied or the identity under which the cmdlet is run
 4. `Test-AdfsServerHealth`: This command performs health checks of the server. The health checks are role-specific (WAP or AD FS)
+5. `Export-AdfsDiagnosticFile`: This command runs diagnostics on your AD FS server and generates a diagnostic file for use with the AD FS Help Diagnostic Analyzer Tool (https://adfshelp.microsoft.com/DiagnosticsAnalyzer)
 
 ## Get-AdfsSystemInformation
 
