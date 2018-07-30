@@ -6,6 +6,10 @@ This module provides tools for gathering related ADFS events from the security, 
 across multiple servers. This tool also allows the user to reconstruct the HTTP request/response headers
 from the logs.
 
+## Install
+
+Follow the instructions [here](https://github.com/Microsoft/adfsToolbox#getting-started) to install this module.
+
 ## Cmdlets in AdfsEventsModule
 
 This module exposes the following cmdlets:

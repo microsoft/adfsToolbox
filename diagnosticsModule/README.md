@@ -8,36 +8,9 @@ This module provides cmdlets that can be used to perform various tests on AD FS 
 
 1. AD FS environment (2012R2 or higher) or WAP environment
 
-## Getting Started
+## Install
 
-### Install through PowerShell Gallery (Recommended)
-
-1. Install the PowerShell Module
-
-    In a PowerShell window, run the following:
-
-    `Install-Module -Name ADFSDiagnostics -Force`
-
-2. Import the PowerShell Module
-
-    In a PowerShell window, run the following:
-
-    `Import-Module ADFSDiagnostics`
-
-3. Run the cmdlet of your choice, with the required parameters (see below for details)
-
-
-### Install manually
-
-1. [Download the repository](https://github.com/Microsoft/adfsManagementTools/zipball/master)
-2. Unzip the download and copy `ADFSDiagnostics` folder to `C:\Program Files\WindowsPowerShell\Modules\`
-3. Import the PowerShell Module
-
-    In a PowerShell window, run the following:
-
-    `Import-Module ADFSDiagnostics`
-
-4. Run the cmdlet of your choice, with the required parameters (see below for details)
+Follow the instructions [here](https://github.com/Microsoft/adfsToolbox#getting-started) to install this module.
 
 ## Available Cmdlets
 

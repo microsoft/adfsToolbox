@@ -8,8 +8,6 @@
 
 .DESCRIPTION
 
-    Version: 3.0.1
-
     ADFSDiagnostics.psm1 is a Windows PowerShell module for diagnosing issues with ADFS
 
 
@@ -21,33 +19,6 @@
 
     Copyright (c) Microsoft Corporation. All rights reserved.
 #>
-
-$Script:ModuleVersion = "3.0.1"
-
-$url = "https://api.github.com/repos/Microsoft/adfsManagementTools/releases/latest"
-$oldProtocol = [Net.ServicePointManager]::SecurityProtocol
-# We switch to using TLS 1.2 because GitHub closes the connection if it uses 1.0 or 1.1
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-try
-{
-    $response = Invoke-WebRequest -URI $url | ConvertFrom-Json
-    if ($response.name -ne $ModuleVersion)
-    {
-       Write-Host "There is a newer version available. Run 'Update-Module -Name ADFSDiagnostics' to update to the newest version"
-       Write-Host "Alternatively, you can download it manually from https://github.com/Microsoft/adfsManagementTools/releases/latest"
-    }
-    else
-    {
-       Write-Host "You have the latest version installed!"
-    }
-}
-catch
-{
-    # Github limits the number of unauthenticated API requests. To avoid this throwing an error we supress it here.
-}
-
-[Net.ServicePointManager]::SecurityProtocol = $oldProtocol
-
 
 #Get public and private function definition files.
 Write-Debug "Importing public and private functions"
