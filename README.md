@@ -28,7 +28,7 @@ This repository contains tools for helping you manage your AD FS farm. The follo
 
     `Import-Module ADFSToolbox -Force`
 
-3. Run the cmdlet of your choice, with the required parameters (see below for details)
+3. Run the cmdlet of your choice, with the required parameters (see individual tools for details)
 
 
 ### Install manually
@@ -41,7 +41,7 @@ This repository contains tools for helping you manage your AD FS farm. The follo
 
     `Import-Module ADFSToolbox -Force`
 
-4. Run the cmdlet of your choice, with the required parameters (see below for details)
+4. Run the cmdlet of your choice, with the required parameters (see individual tools for details)
 
 ## Contributing
 
