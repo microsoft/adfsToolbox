@@ -17,7 +17,7 @@
     Copyright (c) Microsoft Corporation. All rights reserved.
 #>
 
-$Script:ModuleVersion = "1.0.0"
+New-Variable -Name ModuleVersion -Value "1.0.1"
 
 $url = "https://api.github.com/repos/Microsoft/adfsToolbox/releases/latest"
 $oldProtocol = [Net.ServicePointManager]::SecurityProtocol
@@ -39,8 +39,10 @@ try
 catch
 {
     # Github limits the number of unauthenticated API requests. To avoid this throwing an error we supress it here.
-    Write-Host "Importing ADFSToolbox version $Script:ModuleVersion" -BackgroundColor Yellow -ForegroundColor Black
+    Write-Host "Importing ADFSToolbox version $ModuleVersion" -BackgroundColor Yellow -ForegroundColor Black
     Write-Host "Unable to reach GitHub, please manually verify that you have the latest version by going to https://github.com/Microsoft/adfsToolbox/releases/latest" -BackgroundColor Yellow -ForegroundColor Black
 }
 
 [Net.ServicePointManager]::SecurityProtocol = $oldProtocol
+
+Export-ModuleMember -Variable ModuleVersion -Function *

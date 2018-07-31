@@ -591,7 +591,7 @@ function GenerateDiagnosticData()
         [string[]]  $adfsServers,
         [switch]    $local
     )
-    
+
     # configs
     # cmdlets to be run and have results output into the diagnostic file
     # structured as follows:
@@ -602,16 +602,16 @@ function GenerateDiagnosticData()
     #            }
     # (the arguments will be joined and run with the cmdlet.)
     $modules =
-        @{ADFSToolbox = 
+        @{ADFSToolbox =
             @{
                 'Test-AdfsServerHealth' = New-Object System.Collections.ArrayList;
             };
         };
-        
+
     # version number of the output (updated when the function is changed)
-    $outputVersion = $Script:ModuleVersion
+    $outputVersion = $ModuleVersion
     # end configs
-    
+
     Out-Verbose "Binding each argument to relevant cmdlets"
     if ($includeTrusts)
     {
@@ -690,5 +690,5 @@ function GenerateJSONDiagnosticData()
     $diagnosticData = GenerateDiagnosticData -includeTrusts:$includeTrusts -sslThumbprint $sslThumbprint -adfsServers $adfsServers -local:$local;
     Out-Verbose "Successfully generated diagnostic data"
 
-    return ConvertTo-JSON -InputObject $diagnosticData -Depth $jsonDepth
+    return ConvertTo-JSON -InputObject $diagnosticData -Depth $jsonDepth -Compress
 }
