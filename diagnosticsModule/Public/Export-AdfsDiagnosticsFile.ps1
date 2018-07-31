@@ -24,7 +24,7 @@ By default the tests are already run on the local machine, so it is not necessar
 Switch that indicates that you only want to run the health checks on the local machine. This takes precedence over -AdfsServers parameter.
 
 .EXAMPLE
-Export-AdfsDiagnosticsFile -verifyTrustCerts:$true
+Export-AdfsDiagnosticsFile -IncludeTrusts:$true
 Export a diagnostic file of an AD FS Farm and examine the relying party trust and claims provider trust certificates.
 
 .EXAMPLE
