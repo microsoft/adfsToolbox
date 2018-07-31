@@ -10,7 +10,7 @@ required for the AD FS Help Diagnostic Analyzer. This cmdlet works on AD FS 2.0 
 .PARAMETER FilePath
 String parameter that specifies the location of the exported file. By default, a file will be created in the current folder.
 
-.PARAMETER VerifyTrustCerts
+.PARAMETER IncludeTrusts
 Boolean parameter that will enable additional checks for relying party trust and claims provider trust certificates. It is false by default.
 
 .PARAMETER SslThumbprint
