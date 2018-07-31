@@ -602,7 +602,7 @@ function GenerateDiagnosticData()
     #            }
     # (the arguments will be joined and run with the cmdlet.)
     $modules =
-        @{ADFSDiagnostics = 
+        @{ADFSToolbox = 
             @{
                 'Test-AdfsServerHealth' = New-Object System.Collections.ArrayList;
             };
@@ -615,22 +615,22 @@ function GenerateDiagnosticData()
     Out-Verbose "Binding each argument to relevant cmdlets"
     if ($includeTrusts)
     {
-        $modules['ADFSDiagnostics']['Test-AdfsServerHealth'].Add('-includeTrusts') > $null
+        $modules['ADFSToolbox']['Test-AdfsServerHealth'].Add('-verifyTrustCerts') > $null
     }
 
     if ($sslThumbprint)
     {
-        $modules['ADFSDiagnostics']['Test-AdfsServerHealth'].Add(-join('-sslThumbprint ', $sslThumbprint)) > $null
+        $modules['ADFSToolbox']['Test-AdfsServerHealth'].Add(-join('-sslThumbprint ', $sslThumbprint)) > $null
     }
 
     if ($adfsServers)
     {
-        $modules['ADFSDiagnostics']['Test-AdfsServerHealth'].Add(-join('-AdfsServers ', $adfsServers)) > $null
+        $modules['ADFSToolbox']['Test-AdfsServerHealth'].Add(-join('-AdfsServers ', $adfsServers)) > $null
     }
 
     if ($local)
     {
-        $modules['ADFSDiagnostics']['Test-AdfsServerHealth'].Add('-local') > $null
+        $modules['ADFSToolbox']['Test-AdfsServerHealth'].Add('-local') > $null
     }
 
     # create aggregate object to store diagnostic output from each cmdlet run

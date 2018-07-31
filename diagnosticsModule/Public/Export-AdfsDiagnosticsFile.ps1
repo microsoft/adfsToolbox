@@ -10,7 +10,7 @@ required for the AD FS Help Diagnostic Analyzer. This cmdlet works on AD FS 2.0 
 .PARAMETER FilePath
 String parameter that specifies the location of the exported file. By default, a file will be created in the current folder.
 
-.PARAMETER VerifyTrustCerts
+.PARAMETER IncludeTrusts
 Boolean parameter that will enable additional checks for relying party trust and claims provider trust certificates. It is false by default.
 
 .PARAMETER SslThumbprint
@@ -24,7 +24,7 @@ By default the tests are already run on the local machine, so it is not necessar
 Switch that indicates that you only want to run the health checks on the local machine. This takes precedence over -AdfsServers parameter.
 
 .EXAMPLE
-Export-AdfsDiagnosticsFile -verifyTrustCerts:$true
+Export-AdfsDiagnosticsFile -IncludeTrusts:$true
 Export a diagnostic file of an AD FS Farm and examine the relying party trust and claims provider trust certificates.
 
 .EXAMPLE
