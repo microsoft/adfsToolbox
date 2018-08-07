@@ -620,12 +620,12 @@ function GenerateDiagnosticData()
 
     if ($sslThumbprint)
     {
-        $modules['ADFSToolbox']['Test-AdfsServerHealth'].Add(-join('-sslThumbprint ', $sslThumbprint)) > $null
+        $modules['ADFSToolbox']['Test-AdfsServerHealth'].Add('-sslThumbprint $sslThumbprint') > $null
     }
 
     if ($adfsServers)
     {
-        $modules['ADFSToolbox']['Test-AdfsServerHealth'].Add(-join('-AdfsServers ', $adfsServers)) > $null
+        $modules['ADFSToolbox']['Test-AdfsServerHealth'].Add('-AdfsServers $adfsServers') > $null
     }
 
     if ($local)
