@@ -265,7 +265,7 @@ Function TestAdfsProxyHealth()
     }
 
     $results = Invoke-TestFunctions -role "Proxy" -functionsToRun $functionsToRun -functionArguments $functionArguments;
-    foreach($test in $result)
+    foreach($test in $results)
     {
         $test.ComputerName = "Localhost";
     }

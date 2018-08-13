@@ -24,8 +24,8 @@ Function TestIsAdfsProxyRunning
 
 Function TestSTSReachableFromProxy()
 {
-    $testName = "STSReachableFromProxy"
-    $exceptionKey = "STSReachableFromProxyException"
+    $testName = "TestSTSReachableFromProxy"
+    $exceptionKey = "TestSTSReachableFromProxyException"
     try
     {
         $mexUrlTestResult = New-Object TestResult -ArgumentList($testName);
