@@ -14,21 +14,21 @@ Follow the instructions [here](https://github.com/Microsoft/adfsToolbox#getting-
 
 This module exposes the following cmdlets:
 
-1. __```Get-ADFSEvents```__ - Allows you to query servers for ADFS logs. Contains options for querying, aggregation, and analysis
+1. __```Get-AdfsEvents```__ - Allows you to query servers for ADFS logs. Contains options for querying, aggregation, and analysis
 
-2. __```Write-ADFSEventsSummary```__ - Allows you to generate a summary of an ADFS request, based on the logs from ```Get-ADFSEvents```
+2. __```Write-ADFSEventsSummary```__ - Allows you to generate a summary of an ADFS request, based on the logs from ```Get-AdfsEvents```
 
 3. __```Enable-ADFSAuditing```__ - Enables all the ADFS and OS auditing switches on the current server, and enables just the ADFS switches on remote servers
 
 4. __```Disable-ADFSAuditing```__ - Disables all the ADFS and OS auditing switches on the current server, and disables just the ADFS switches on remote servers
 
-The detailed parameters for __```Get-ADFSEvents```__ and __```Write-ADFSEventsSummary```__ are provided below.
+The detailed parameters for __```Get-AdfsEvents```__ and __```Write-ADFSEventsSummary```__ are provided below.
 
-The ```Get-ADFSEvents``` cmdlet is used to aggregate events by correlation ID, while the ```Write-ADFSEventsSummary```
+The ```Get-AdfsEvents``` cmdlet is used to aggregate events by correlation ID, while the ```Write-ADFSEventsSummary```
 cmdlet is used to generate a PowerShell Table of only the most relevant logging information from the events that are piped
 in.
 
-## Get-ADFSEvents Parameters
+## Get-AdfsEvents Parameters
 
 * __Logs__ - A list of AD FS logs to include in the aggregation. Current options are: "Admin", "Debug", "Security".
 The default will pull from both Security and Admin.
@@ -42,10 +42,11 @@ time will be aggregated
 will be aggregated
 * __Server__ - A comma-separated list of server names to pull logs from. On ADFS 2016 and up, you can use "\*" to query all
 The default will query LocalHost
+* __FilePath__ - A file path to an EVTX log file that you want to read from, instead of querying your servers
 
-## Get-ADFSEvents Output
+## Get-AdfsEvents Output
 
-The output produced by Get-ADFSEvents is a list of objects, each containing the following properties.
+The output produced by Get-AdfsEvents is a list of objects, each containing the following properties.
 
 1.  __CorrelationID__ - the Correlation ID for this set of events
 2.  __Events__ - a list of [EventLogRecord](https://msdn.microsoft.com/en-us/library/system.diagnostics.eventing.reader.eventlogrecord)
@@ -53,7 +54,7 @@ objects for the matching Correlation ID.
 3.  __AnalysisData__ - a JSON data blob containing details on the HTTP requests that were performed during the course of this transaction
 For more details on the AnalysisData blob, see below
 
-## Using Get-ADFSEvents
+## Using Get-AdfsEvents
 
 1. Import the PowerShell Module
 
@@ -61,11 +62,11 @@ For more details on the AnalysisData blob, see below
 
     ```ipmo AdfsEventsModule.psm1```
 
-2. Run Get-ADFSEvents with your desired parameters to get a list of PowerShell objects
+2. Run Get-AdfsEvents with your desired parameters to get a list of PowerShell objects
 
     EXAMPLE: Retrieve all logs from two servers for a specific request
 
-    ```$logs = Get-ADFSEvents -Logs Security, Admin, Debug -CorrelationID 0c0fd6ee-4b1e-4260-0300-0080070000e3 -Server LocalHost, MyServer```
+    ```$logs = Get-AdfsEvents -Logs Security, Admin, Debug -CorrelationID 0c0fd6ee-4b1e-4260-0300-0080070000e3 -Server LocalHost, MyServer```
 
     OUTPUT:
 
@@ -139,7 +140,7 @@ For more details on the AnalysisData blob, see below
 
     EXAMPLE:
 
-    ```Get-ADFSEvents -Logs Security, Admin, Debug -CorrelationID 0c0fd6ee-4b1e-4260-0300-0080070000e3 -Server LocalHost, MyServer | Write-ADFSEventsSummary```
+    ```Get-AdfsEvents -Logs Security, Admin, Debug -CorrelationID 0c0fd6ee-4b1e-4260-0300-0080070000e3 -Server LocalHost, MyServer | Write-ADFSEventsSummary``` 
 
     OUTPUT:
 
@@ -191,10 +192,10 @@ For more details on the AnalysisData blob, see below
 
 5. You can pipe the output of ```Write-ADFSEventsSummary``` to a CSV
 
-    ```Get-ADFSEvents -Logs Security, Admin, Debug -CorrelationID 0c0fd6ee-4b1e-4260-0300-0080070000e3 -Server LocalHost, MyServer | Write-ADFSEventsSummary | Export-CSV mylogs.csv```
+    ```Get-AdfsEvents -Logs Security, Admin, Debug -CorrelationID 0c0fd6ee-4b1e-4260-0300-0080070000e3 -Server LocalHost, MyServer | Write-ADFSEventsSummary | Export-CSV mylogs.csv``` 
 
 
-6. You can output the full data objects from ```Get-ADFSEvents``` to XML using:
+6. You can output the full data objects from ```Get-AdfsEvents``` to XML using:
 
     ```Export-Clixml```
 
@@ -228,7 +229,7 @@ the current transaction that are marked as errors
 
 This project includes a set of [Pester](https://github.com/pester/Pester) tests to ensure the basic functionality of the script.
 
-To run the tests, you must have Pester version 4.x or higher installed on the machine you will run ```Get-ADFSEvents``` from.
+To run the tests, you must have Pester version 4.x or higher installed on the machine you will run ```Get-AdfsEvents``` from.
 For more information on installing Pester, see their [installation instructions](https://github.com/pester/Pester/wiki/Installation-and-Update).
 
 Once Pester is installed, you can copy the test file and script to the same location, and run the following:

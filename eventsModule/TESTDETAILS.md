@@ -4,7 +4,7 @@
 
 This project includes a set of [Pester](https://github.com/pester/Pester) tests to ensure the basic functionality of the AdfsEventsModule script. 
 
-To run the tests, you must have Pester version 4.x or higher installed on the machine you will run ```Get-ADFSEvents``` from. 
+To run the tests, you must have Pester version 4.x or higher installed on the machine you will run ```Get-AdfsEvents``` from. 
 For more information on installing Pester, see their [installation instructions](https://github.com/pester/Pester/wiki/Installation-and-Update). 
 
 Once Pester is installed, you can copy the test file and script to the same location, and run the following: 
