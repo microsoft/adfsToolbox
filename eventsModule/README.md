@@ -1,14 +1,18 @@
-# AD FS Log Tools
+# AD FS Events Module
 
 ## AdfsEventsModule Overview
 
-This module provides tools for gathering related ADFS events from the security, admin, and debug logs, 
-across multiple servers. This tool also allows the user to reconstruct the HTTP request/response headers 
+This module provides tools for gathering related ADFS events from the security, admin, and debug logs,
+across multiple servers. This tool also allows the user to reconstruct the HTTP request/response headers
 from the logs.
+
+## Install
+
+Follow the instructions [here](https://github.com/Microsoft/adfsToolbox#getting-started) to install this module.
 
 ## Cmdlets in AdfsEventsModule
 
-This module exposes the following cmdlets: 
+This module exposes the following cmdlets:
 
 1. __```Get-AdfsEvents```__ - Allows you to query servers for ADFS logs. Contains options for querying, aggregation, and analysis
 
@@ -22,17 +26,17 @@ The detailed parameters for __```Get-AdfsEvents```__ and __```Write-ADFSEventsSu
 
 The ```Get-AdfsEvents``` cmdlet is used to aggregate events by correlation ID, while the ```Write-ADFSEventsSummary```
 cmdlet is used to generate a PowerShell Table of only the most relevant logging information from the events that are piped
-in. 
+in.
 
 ## Get-AdfsEvents Parameters
 
 * __Logs__ - A list of AD FS logs to include in the aggregation. Current options are: "Admin", "Debug", "Security".
 The default will pull from both Security and Admin.
-* __CorrelationID__ - The correlation ID for a single request. This will aggregate all chosen logs for this request  
+* __CorrelationID__ - The correlation ID for a single request. This will aggregate all chosen logs for this request
 * __All__ - This flag will cause all events in the desired logs to be grouped by correlation ID.
 * __CreateAnalysisData__ - This flag can be combined with any means of event collection (a single Correlation ID, all events, or
-time based) to reconstruct the HTTP requests that were performed for each Correlation ID. 
-* __StartTime__ - The UTC start time to use when aggregating multiple requests. All requests that start after this 
+time based) to reconstruct the HTTP requests that were performed for each Correlation ID.
+* __StartTime__ - The UTC start time to use when aggregating multiple requests. All requests that start after this
 time will be aggregated
 * __EndTime__ - The UTC end time to use when aggregating multiple requests. All requests that end before this time
 will be aggregated
@@ -42,17 +46,17 @@ The default will query LocalHost
 
 ## Get-AdfsEvents Output
 
-The output produced by Get-AdfsEvents is a list of objects, each containing the following properties. 
+The output produced by Get-AdfsEvents is a list of objects, each containing the following properties.
 
 1.  __CorrelationID__ - the Correlation ID for this set of events
 2.  __Events__ - a list of [EventLogRecord](https://msdn.microsoft.com/en-us/library/system.diagnostics.eventing.reader.eventlogrecord)
-objects for the matching Correlation ID. 
+objects for the matching Correlation ID.
 3.  __AnalysisData__ - a JSON data blob containing details on the HTTP requests that were performed during the course of this transaction
 For more details on the AnalysisData blob, see below
 
 ## Using Get-AdfsEvents
 
-1. Import the PowerShell Module 
+1. Import the PowerShell Module
 
     In a PowerShell window, run the following:
 
@@ -118,7 +122,7 @@ For more details on the AnalysisData blob, see below
                        ProcessId            :
                        ThreadId             :
                        MachineName          : contoso.com
-                       UserId               : 
+                       UserId               :
                        TimeCreated          : 9/19/2017 1:50:43 PM
                        ActivityId           :
                        RelatedActivityId    :
@@ -134,11 +138,11 @@ For more details on the AnalysisData blob, see below
 
 4. You can pipe your output to ```Write-ADFSEventsSummary```
 
-    EXAMPLE: 
+    EXAMPLE:
 
     ```Get-AdfsEvents -Logs Security, Admin, Debug -CorrelationID 0c0fd6ee-4b1e-4260-0300-0080070000e3 -Server LocalHost, MyServer | Write-ADFSEventsSummary``` 
 
-    OUTPUT: 
+    OUTPUT:
 
     ```
     Time          : 9/19/2017 1:50:43 PM
@@ -193,42 +197,42 @@ For more details on the AnalysisData blob, see below
 
 6. You can output the full data objects from ```Get-AdfsEvents``` to XML using:
 
-    ```Export-Clixml``` 
+    ```Export-Clixml```
 
-    ```Import-Clixml``` 
+    ```Import-Clixml```
 
 
 ## The AnalysisData Blob
 
-The AnalysisData blob contains the following: 
+The AnalysisData blob contains the following:
 
-* ```requests``` - a set of HTTP requests made during the current transaction. 
+* ```requests``` - a set of HTTP requests made during the current transaction.
 Each request contains request details, HTTP header information, and session token information (when available)
 
-* ```responses``` - a set of HTTP responses given during the current transaction. 
+* ```responses``` - a set of HTTP responses given during the current transaction.
 Each response contains response details, HTTP header information, and outgoing tokens (when available)
 
-* ```errors``` - a set of [EventLogRecord](https://msdn.microsoft.com/en-us/library/system.diagnostics.eventing.reader.eventlogrecord) objects from 
+* ```errors``` - a set of [EventLogRecord](https://msdn.microsoft.com/en-us/library/system.diagnostics.eventing.reader.eventlogrecord) objects from
 the current transaction that are marked as errors
 
-* ```timeline``` - a set of timeline events to show the progress of a transaction through the ADFS pipeline. 
-  Timeline events correspond to roughly the following: 
+* ```timeline``` - a set of timeline events to show the progress of a transaction through the ADFS pipeline.
+  Timeline events correspond to roughly the following:
 
-    * ```incoming``` - ADFS received an incoming HTTP request 
-    * ```authn``` - ADFS is performing authentication 
-    * ```authz``` - ADFS is performing authorization checks 
-    * ```issuance``` - ADFS is performing token issuance 
+    * ```incoming``` - ADFS received an incoming HTTP request
+    * ```authn``` - ADFS is performing authentication
+    * ```authz``` - ADFS is performing authorization checks
+    * ```issuance``` - ADFS is performing token issuance
 
-  Each timeline event contains a ```success``` or ```failure``` result, indicating whether the given pipeline step was a success or failure. 
+  Each timeline event contains a ```success``` or ```failure``` result, indicating whether the given pipeline step was a success or failure.
 
-## Pester Tests 
+## Pester Tests
 
-This project includes a set of [Pester](https://github.com/pester/Pester) tests to ensure the basic functionality of the script. 
+This project includes a set of [Pester](https://github.com/pester/Pester) tests to ensure the basic functionality of the script.
 
-To run the tests, you must have Pester version 4.x or higher installed on the machine you will run ```Get-AdfsEvents``` from. 
-For more information on installing Pester, see their [installation instructions](https://github.com/pester/Pester/wiki/Installation-and-Update). 
+To run the tests, you must have Pester version 4.x or higher installed on the machine you will run ```Get-AdfsEvents``` from.
+For more information on installing Pester, see their [installation instructions](https://github.com/pester/Pester/wiki/Installation-and-Update).
 
-Once Pester is installed, you can copy the test file and script to the same location, and run the following: 
+Once Pester is installed, you can copy the test file and script to the same location, and run the following:
 
     cd <directory containing tests and script>
     Invoke-Pester -Script .\Test.AdfsEventsModule.ps1
@@ -238,11 +242,11 @@ For more details, see [the testing Readme](TESTDETAILS.md)
 
 ## Contributing
 
-This project welcomes contributions and suggestions. We encourage you to fork this project, include any scripts you 
-use for parsing, managing, or manipulating ADFS logs, and then do a pull request to master. If your scripts work, 
-we'll include them so everyone can benefit. 
+This project welcomes contributions and suggestions. We encourage you to fork this project, include any scripts you
+use for parsing, managing, or manipulating ADFS logs, and then do a pull request to master. If your scripts work,
+we'll include them so everyone can benefit.
 
-Most contributions require you to agree to a Contributor License Agreement (CLA) declaring that you have the 
+Most contributions require you to agree to a Contributor License Agreement (CLA) declaring that you have the
 right to, and actually do, grant us the rights to use your contribution. For details, visit https://cla.microsoft.com.
 
 When you submit a pull request, a CLA-bot will automatically determine whether you need to provide
