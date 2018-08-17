@@ -258,3 +258,53 @@ Function TestTimeSync
         return Create-ErrorExceptionTestResult $testName $_.Exception;
     }
 }
+
+Function TestNonSelfSignedCertificatesInRootStore
+{
+    $testName = "TestNonSelfSignedCertificatesInRootStore";
+    $testResult = New-Object TestResult -ArgumentList($testName)
+    $certificateOutputKey = "NonSelfSignedCertificates";
+
+    try
+    {
+        $nonSelfSignedCertificates = Get-ChildItem Cert:\LocalMachine\root -Recurse | Where-Object {$_.Issuer -ne $_.Subject} | Select-Object FriendlyName, Issuer, Subject, Thumbprint;
+
+        if ($nonSelfSignedCertificates.Count -ne 0)
+        {
+            $testResult.Detail = "There were non-self-signed certificates found in the root store. Move them to the intermediate store.";
+            $testResult.Result = [ResultType]::Fail;
+            $testResult.Output = @{$certificateOutputKey = $nonSelfSignedCertificates};
+        }
+
+        return $testResult;
+    }
+    catch [Exception]
+    {
+        return Create-ErrorExceptionTestResult $testName $_.Exception
+    }
+}
+
+Function TestSelfSignedCertificatesInIntermediateCaStore
+{
+    $testName = "TestSelfSignedCertificatesInIntermediateCaStore";
+    $testResult = New-Object TestResult -ArgumentList($testName)
+    $certificateOutputKey = "SelfSignedCertificates";
+
+    try
+    {
+        $selfSignedCertificates = Get-ChildItem Cert:\LocalMachine\CA | Where-Object { $_.Issuer -eq $_.Subject } | Select-Object FriendlyName, Issuer, Subject, Thumbprint;
+
+        if ($selfSignedCertificates.Count -ne 0)
+        {
+            $testResult.Detail = "There were self-signed certificates found in the intermediate CA store. Move them to the root certificate store.";
+            $testResult.Result = [ResultType]::Fail;
+            $testResult.Output = @{$certificateOutputKey = $selfSignedCertificates};
+        }
+
+        return $testResult;
+    }
+    catch [Exception]
+    {
+        return Create-ErrorExceptionTestResult $testName $_.Exception
+    }
+}

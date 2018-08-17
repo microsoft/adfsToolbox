@@ -114,7 +114,9 @@ Function TestAdfsSTSHealth()
             "TestTrustedDevicesCertificateStore", `
             "TestAdfsPatches", `
             "TestServicePrincipalName", `
-            "TestTLSMismatch");
+            "TestTLSMismatch", `
+            "TestNonSelfSignedCertificatesInRootStore", `
+            "TestSelfSignedCertificatesInIntermediateCaStore");
 
     if (($adfsServers -eq $null) -or ($adfsServers.Count -eq 0))
     {
@@ -251,9 +253,10 @@ Function TestAdfsProxyHealth()
             "TestIsAdfsRunning", `
             "TestIsAdfsProxyRunning", `
             "TestSTSReachableFromProxy", `
-            "TestNoNonSelfSignedCertificatesInRootStore", `
             "TestTLSMismatch", `
-            "TestTimeSync");
+            "TestTimeSync", `
+            "TestNonSelfSignedCertificatesInRootStore", `
+            "TestSelfSignedCertificatesInIntermediateCaStore");
 
     if ([string]::IsNullOrWhiteSpace($sslThumbprint))
     {
