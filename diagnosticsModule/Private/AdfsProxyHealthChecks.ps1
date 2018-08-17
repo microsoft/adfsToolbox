@@ -58,31 +58,6 @@ Function TestSTSReachableFromProxy()
     }
 }
 
-Function TestNoNonSelfSignedCertificatesInRootStore
-{
-    $testName = "TestNoNonSelfSignedCertificateInRootStore";
-    $testResult = New-Object TestResult -ArgumentList($testName)
-    $certificateOutputKey = "NonSelfSignedCertificates";
-
-    try
-    {
-        $nonSelfSignedCertificates = Get-ChildItem Cert:\LocalMachine\root -Recurse | Where-Object {$_.Issuer -ne $_.Subject} | Select-Object FriendlyName, Issuer, Subject, Thumbprint;
-
-        if ($nonSelfSignedCertificates.Count -ne 0)
-        {
-            $testResult.Detail = "There were non-self-signed certificates found in the root store. Move them to the intermediate store.";
-            $testResult.Result = [ResultType]::Fail;
-            $testResult.Output = @{$certificateOutputKey = $nonSelfSignedCertificates};
-        }
-
-        return $testResult;
-    }
-    catch [Exception]
-    {
-        return Create-ErrorExceptionTestResult $testName $_.Exception
-    }
-}
-
 Function TestProxySslBindings
 {
     Param(
