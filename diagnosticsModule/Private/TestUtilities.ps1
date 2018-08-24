@@ -182,6 +182,9 @@ Function TryTestAdfsSTSHealthOnFarmNodes()
     }
 
     $results = @();
+    $reachableServer = @();
+    $unreachableServer = @();
+
     Write-Host "Running the health checks on the local machine.";
     $result = TestAdfsSTSHealth -verifyO365 $verifyO365 -verifyTrustCerts $verifyTrustCerts -adfsServers $adfsServers;
     foreach($test in $result)
@@ -209,6 +212,7 @@ Function TryTestAdfsSTSHealthOnFarmNodes()
             if ($session -eq $null)
             {
                 Out-Warning "There was a problem connecting to $server, skipping this server."
+                $unreachableServer += $server;
                 continue;
             }
 
@@ -217,6 +221,8 @@ Function TryTestAdfsSTSHealthOnFarmNodes()
                 Invoke-Expression $commonFunctions;
                 return TestAdfsSTSHealth;
             }
+
+            $reachableServer += $server;
 
             $serializedResult = @();
 
@@ -237,7 +243,7 @@ Function TryTestAdfsSTSHealthOnFarmNodes()
     }
 
     Write-Host "Successfully completed all health checks.";
-    return New-Object TestResultsContainer -ArgumentList(, $results);
+    return New-Object TestResultsContainer -ArgumentList($results, $reachableServer, $unreachableServer);
 }
 
 Function TestAdfsProxyHealth()

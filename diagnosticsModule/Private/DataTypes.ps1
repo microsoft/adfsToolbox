@@ -33,15 +33,23 @@ public class TestResultsContainer
 {
     public List<TestResult> AllTests { get; set; }
 
+    public List<string> ReachableServers { get; set; }
+
+    public List<string> UnreachableServers { get; set; }
+
     public TestResultsContainer()
     {
         AllTests = new List<TestResult>();
     }
 
-    public TestResultsContainer(TestResult[] newResults)
+    public TestResultsContainer(TestResult[] newResults, string[] reachableServers, string[] unreachableServers)
     {
         AllTests = new List<TestResult>();
         AllTests.AddRange(newResults);
+        ReachableServers = new List<string>();
+        ReachableServers.AddRange(reachableServers);
+        UnreachableServers = new List<string>();
+        UnreachableServers.AddRange(unreachableServers); 
     }
 
     public void Add(TestResult newResult)
