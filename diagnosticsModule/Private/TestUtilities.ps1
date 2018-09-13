@@ -149,6 +149,8 @@ Function TryTestAdfsSTSHealthOnFarmNodes()
         [switch]
         $local = $false
     )
+    $computerSystemObject = Get-WmiObject win32_computersystem
+    $fqdn = $computerSystemObject.DNSHostName + "." + $computerSystemObject.Domain
 
     Out-Verbose "Attempting to run AD FS STS health checks farm wide.";
     if (($adfsServers -eq $null -or $adfsServers.Count -eq 0) -and (-not ($local)))
@@ -165,7 +167,7 @@ Function TryTestAdfsSTSHealthOnFarmNodes()
             foreach ($server in $nodes)
             {
                 # We skip adding the node that corresponds to this server.
-                if ($server.FQDN -like ([System.Net.Dns]::GetHostByName(($env:computerName))).HostName)
+                if ($server.FQDN -like $fqdn)
                 {
                     continue;
                 }
@@ -178,7 +180,7 @@ Function TryTestAdfsSTSHealthOnFarmNodes()
     else
     {
         # We filter out this computer's name and FQDN
-        $adfsServers = $adfsServers | Where-Object { ($_ -notlike [System.Net.Dns]::GetHostByName(($env:computerName)).HostName) -and ($_ -notlike $env:COMPUTERNAME) };
+        $adfsServers = $adfsServers | Where-Object { ($_ -notlike [System.Net.Dns]::GetHostByName(($env:computerName)).HostName) -and ($_ -notlike $env:COMPUTERNAME) -and ($_ -notlike $fqdn) };
     }
 
     $results = @();
