@@ -191,7 +191,7 @@ Function TryTestAdfsSTSHealthOnFarmNodes()
     $result = TestAdfsSTSHealth -verifyO365 $verifyO365 -verifyTrustCerts $verifyTrustCerts -adfsServers $adfsServers;
     foreach($test in $result)
     {
-        $test.ComputerName = "Localhost";
+        $test.ComputerName = $fqdn;
     }
 
     $results += $result;
@@ -255,6 +255,9 @@ Function TestAdfsProxyHealth()
         $sslThumbprint
     )
 
+    $computerSystemObject = Get-WmiObject win32_computersystem
+    $fqdn = $computerSystemObject.DNSHostName + "." + $computerSystemObject.Domain
+
     $functionArguments = @{"AdfsSslThumbprint" = $sslThumbprint};
 
     $functionsToRun = @( `
@@ -278,10 +281,11 @@ Function TestAdfsProxyHealth()
     $results = Invoke-TestFunctions -role "Proxy" -functionsToRun $functionsToRun -functionArguments $functionArguments;
     foreach($test in $results)
     {
-        $test.ComputerName = "Localhost";
+        $test.ComputerName = $fqdn;
     }
 
     Write-Host "Successfully completed all health checks.";
-
-    return New-Object TestResultsContainer -ArgumentList(, $results);
+    $reachableServer = @($fqdn);
+    $unreachableServer = @();
+    return New-Object TestResultsContainer -ArgumentList($results, $reachableServer, $unreachableServer);
 }

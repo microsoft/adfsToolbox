@@ -20,7 +20,7 @@
     Copyright (c) Microsoft Corporation. All rights reserved.
 #>
 
-New-Variable -Name ModuleVersion -Value "1.0.4"
+New-Variable -Name ModuleVersion -Value "1.0.5"
 
 $url = "https://api.github.com/repos/Microsoft/adfsToolbox/releases/latest"
 $oldProtocol = [Net.ServicePointManager]::SecurityProtocol
