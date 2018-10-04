@@ -1,4 +1,4 @@
-# ADFS Service State
+﻿# ADFS Service State
 Function TestIsAdfsRunning()
 {
     $testName = "IsAdfsRunning"

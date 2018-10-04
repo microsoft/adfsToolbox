@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 Gathers and exports diagnostic data into a file. This cmdlet is used with the Diagnostics Analyzer Tool on
 the AD FS Help website (https://adfshelp.microsoft.com/DiagnosticsAnalyzer).
@@ -32,7 +32,7 @@ Export-AdfsDiagnosticsFile -adfsServers  @("sts1.contoso.com", "sts2.contoso.com
 Export a diagnostic file of an AD FS farm by running checks on the following servers: sts1.contoso.com, sts2.contoso.com, sts3.contoso.com. This automatically runs the test on the local machine as well.
 
 .EXAMPLE
-Export-AdfsDiagnosticsFile -sslThumbprint ‎c1994504c91dfef663b5ce8dd22d1a44748a6e16
+Export-AdfsDiagnosticsFile -sslThumbprint â€Žc1994504c91dfef663b5ce8dd22d1a44748a6e16
 Export a diagnostic file of a WAP server and utilize the provided thumbprint to check SSL bindings.
 #>
 

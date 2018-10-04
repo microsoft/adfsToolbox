@@ -1,13 +1,13 @@
-# Determine our script root
+﻿# Determine our script root
 $root = Split-Path $PSScriptRoot -Parent
 
 # Load module via definition
-Import-Module $root\ADFSDiagnostics.psd1 -Force
+Import-Module $root\ADFSDiagnosticsModule.psm1 -Force
 
-InModuleScope ADFSDiagnostics {
+InModuleScope ADFSDiagnosticsModule {
     Describe 'Load ADFSDiagnostics' {
         It 'should load ADFSDiagnostics module' {
-            $ADFSDiagnosticsModule = Get-Module ADFSDiagnostics -all
+            $ADFSDiagnosticsModule = Get-Module ADFSDiagnosticsModule -all
 
             $ADFSDiagnosticsModule | should be $true
         }

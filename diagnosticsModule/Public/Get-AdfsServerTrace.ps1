@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 Retrieves all the AD FS events generated given an Activity ID ID accross different computers
 

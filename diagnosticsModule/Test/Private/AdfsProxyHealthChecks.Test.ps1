@@ -1,10 +1,10 @@
-# Determine our script root
+﻿# Determine our script root
 $parent = Split-Path $PSScriptRoot -Parent
 $root = Split-Path $parent -Parent
 # Load module via definition
-Import-Module $root\ADFSDiagnostics.psd1 -Force
+Import-Module $root\ADFSDiagnosticsModule.psm1 -Force
 
-InModuleScope ADFSDiagnostics {
+InModuleScope ADFSDiagnosticsModule {
     # Shared constants
     $sharedError = "Error message"
     $sharedErrorException = "System.Management.Automation.RuntimeException: Error message"
@@ -48,7 +48,7 @@ InModuleScope ADFSDiagnostics {
         }
     }
 
-    Describe "TestNoNonSelfSignedCertificatesInRootStore" {
+    Describe "TestNonSelfSignedCertificatesInRootStore" {
         It "should pass" {
             # Arrange
             $subject = "CN=TestContosoCert"
@@ -58,7 +58,7 @@ InModuleScope ADFSDiagnostics {
             Mock -CommandName Get-ChildItem -MockWith { return @($cert, $cert) }
 
             # Act
-            $ret = TestNoNonSelfSignedCertificatesInRootStore
+            $ret = TestNonSelfSignedCertificatesInRootStore
 
             $cert | Remove-Item
 
@@ -93,7 +93,7 @@ InModuleScope ADFSDiagnostics {
 
             Mock -CommandName Get-ChildItem -MockWith { return @($nonSelfSignedCert, $selfSignedCert, $selfSignedCert, $secondNonSelfSignedCert) }
             # Act
-            $ret = TestNoNonSelfSignedCertificatesInRootStore
+            $ret = TestNonSelfSignedCertificatesInRootStore
 
             # Assert
             $ret.Result | should beexactly Fail
@@ -117,7 +117,7 @@ InModuleScope ADFSDiagnostics {
             Mock -CommandName Get-ChildItem -MockWith { throw $sharedError }
 
             # Act
-            $ret = TestNoNonSelfSignedCertificatesInRootStore
+            $ret = TestNonSelfSignedCertificatesInRootStore
 
             # Assert
             $ret.Result | should beexactly Error

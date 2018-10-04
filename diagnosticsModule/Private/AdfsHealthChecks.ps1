@@ -1,4 +1,4 @@
-# Windows Internal Database Service State if it is used by ADFS
+﻿# Windows Internal Database Service State if it is used by ADFS
 Function TestIsWidRunning()
 {
     $testName = "IsWidRunning"

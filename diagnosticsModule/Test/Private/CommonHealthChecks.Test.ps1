@@ -1,10 +1,10 @@
-# Determine our script root
+﻿# Determine our script root
 $parent = Split-Path $PSScriptRoot -Parent
 $script:root = Split-Path $parent -Parent
 # Load module via definition
-Import-Module $script:root\ADFSDiagnostics.psd1 -Force
+Import-Module $script:root\ADFSDiagnosticsModule.psm1 -Force
 
-InModuleScope ADFSDiagnostics {
+InModuleScope ADFSDiagnosticsModule {
     # Shared constants
     $sharedError = "Error message"
     $sharedErrorException = "System.Management.Automation.RuntimeException: Error message"

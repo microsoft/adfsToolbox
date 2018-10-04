@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 Starts background jobs to search events based on AD FS Activity ID accross different computers
 

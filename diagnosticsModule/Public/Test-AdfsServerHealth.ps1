@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 Performs applicable health checks on the AD FS server (Proxy or STS)
 
@@ -45,7 +45,7 @@ Test-AdfsServerHealth -adfsServers  @("sts1.contoso.com", "sts2.contoso.com", "s
 Execute test suite in an AD FS farm and run the test on the following servers: ADFS1.contoso.com, ADFS2.contoso.com, ADFS3.contoso.com. This automatically runs the test on the local machine as well.
 
 .EXAMPLE
-Test-AdfsServerHealth -sslThumbprint ‎c1994504c91dfef663b5ce8dd22d1a44748a6e16
+Test-AdfsServerHealth -sslThumbprint â€Žc1994504c91dfef663b5ce8dd22d1a44748a6e16
 Execute test suite on a WAP server and utilize the provided thumbprint to check SSL bindings.
 
 .NOTES

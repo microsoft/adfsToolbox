@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 Combines and sorts all the AD FS events generated given an activity ID from background jobs
 

@@ -1,4 +1,4 @@
-<#
+﻿<#
 
 .SYNOPSIS
     Contains data gathering, health checks, and additional utilities for AD FS server deployments.

@@ -1,4 +1,4 @@
-Function Test-AdfsServerHealthSingleCheck
+﻿Function Test-AdfsServerHealthSingleCheck
 {
     [CmdletBinding()]
     param

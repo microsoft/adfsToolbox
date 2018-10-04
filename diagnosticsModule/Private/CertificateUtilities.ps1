@@ -1,4 +1,4 @@
-Function Create-CertCheckName
+﻿Function Create-CertCheckName
 {
     param(
         [string]

@@ -1,4 +1,4 @@
-function Get-AdfsWidServiceStateSummary
+﻿function Get-AdfsWidServiceStateSummary
 {
     $stsWMIObject = (Get-WmiObject -Namespace root\ADFS -Class SecurityTokenService)
 
