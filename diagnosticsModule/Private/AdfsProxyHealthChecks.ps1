@@ -1,4 +1,4 @@
-Function TestIsAdfsProxyRunning
+﻿Function TestIsAdfsProxyRunning
 {
     $testName = "TestIsAdfsProxyRunning";
     $serviceStateOutputKey = "ADFSProxyServiceState";

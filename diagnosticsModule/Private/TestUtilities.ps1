@@ -1,4 +1,4 @@
-Function CreateTestResultFromPSObject($obj)
+﻿Function CreateTestResultFromPSObject($obj)
 {
     $testResult = New-Object TestResult -ArgumentList($obj.Name);
     $testResult.Result = $obj.Result;

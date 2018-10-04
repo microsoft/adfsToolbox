@@ -1,4 +1,4 @@
-Function Out-Verbose
+﻿Function Out-Verbose
 {
     Param($out)
     Write-Verbose "$((Get-Variable MyInvocation -Scope 1).Value.MyCommand.Name): $out"

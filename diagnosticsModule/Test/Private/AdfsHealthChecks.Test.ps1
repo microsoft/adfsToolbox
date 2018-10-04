@@ -1,10 +1,10 @@
-# Determine our script root
+﻿# Determine our script root
 $parent = Split-Path $PSScriptRoot -Parent
 $script:root = Split-Path $parent -Parent
 # Load module via definition
-Import-Module $script:root\ADFSDiagnostics.psd1 -Force
+Import-Module $root\ADFSDiagnosticsModule.psm1 -Force
 
-InModuleScope ADFSDiagnostics {
+InModuleScope ADFSDiagnosticsModule {
     # Shared constants
     $sharedError = "Error message"
     $sharedErrorException = "System.Management.Automation.RuntimeException: Error message"
@@ -232,7 +232,7 @@ InModuleScope ADFSDiagnostics {
 
                 # Assert
                 $ret.Result | should beexactly NotRun
-                $ret.Detail | should beexactly "Current user madpatel is not a domain account. Cannot execute this test"
+                $ret.Detail | should beexactly "Current user $env:USERNAME is not a domain account. Cannot execute this test"
             }
 
             It "when AD FS is not running" {

@@ -1,4 +1,4 @@
-#for testability
+﻿#for testability
 $testMode = $false
 Function Set-ADFSDiagTestMode
 {

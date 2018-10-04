@@ -1,4 +1,4 @@
-function Initialize()
+﻿function Initialize()
 {
     ipmo .\AdfsEventsModule.psm1
     Set-AdfsProperties -AuditLevel Verbose

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 Performs a synthetic transaction to get a token against an AD FS farm
 
