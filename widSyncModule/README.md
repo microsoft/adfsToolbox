@@ -101,4 +101,4 @@ Full synchronization will occur during the next normal sync cycle (which occurs 
 Note, the serialnumber reset is only performed when each of the following conditions are true:
 * The script is launched explicitly with the option `-Force $true`
 * The script is run on a server with the ADFS Secondary role
-* The last WID sync status was sucessfull (executed without error)
+* The last WID sync status was successful (executed without error)

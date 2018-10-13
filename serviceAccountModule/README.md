@@ -8,9 +8,9 @@ The module exports four functions which may be used in conjunction to successful
 
 ## Warning Before Use
 
-It is highly reccommended that you create a backup before attemptig to change the service account as executing cmdlets in the wrong order may result in non-functioning AD FS servers. Performing the change first in a test farm is also advised.
+It is highly recommended that you create a backup before attemptig to change the service account as executing cmdlets in the wrong order may result in non-functioning AD FS servers. Performing the change first in a test farm is also advised.
 
-Althouhgh it is reccommended a list of secondary servers be provided when invoking Add-AdfsServiceAccountRule or Remove-AdfsServiceAccountRule on a multi-node WID farm, you can optionally manually force a sync on all secondary servers or allow it to occur on the next sync cycle (5 minutes by default).
+Althouhgh it is recommended a list of secondary servers be provided when invoking Add-AdfsServiceAccountRule or Remove-AdfsServiceAccountRule on a multi-node WID farm, you can optionally manually force a sync on all secondary servers or allow it to occur on the next sync cycle (5 minutes by default).
 
 ## Install
 
