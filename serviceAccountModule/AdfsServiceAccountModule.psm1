@@ -294,7 +294,7 @@ Function AddUserRights
     If (!$?) 
     { 
         $RightsFailed =  $true 
-        Write-Output "`tFailed to add user rights for $NewName`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" -NoNewline 
+        Write-Host "`tFailed to add user rights for $NewName`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" -NoNewline 
         ($ElapsedTime.Elapsed.ToString())+ "[WARN]      Failed to add user rights for ${NewName}: 'Log on as a service', 'Generate security audits'" | Out-File $LogPath -Append 
         Return $RightsFailed 
     } 
@@ -303,7 +303,7 @@ Function AddUserRights
     If (!$?) 
     { 
         $RightsFailed =  $true 
-        Write-Output "`tFailed to add user rights for $NewName`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" -NoNewline 
+        Write-Host "`tFailed to add user rights for $NewName`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" -NoNewline 
         ($ElapsedTime.Elapsed.ToString())+ "[WARN]      Failed to add user rights for ${NewName}: 'Log on as a service', 'Generate security audits'" | Out-File $LogPath -Append 
         Return $RightsFailed 
     }  
@@ -311,7 +311,7 @@ Function AddUserRights
     { 
         GPUpdate /Force | Out-File $LogPath -Append 
         $RightsFailed = $false 
-        Write-Output "`tSuccess" -ForegroundColor "green" -NoNewline 
+        Write-Host "`tSuccess" -ForegroundColor "green" -NoNewline 
         ($ElapsedTime.Elapsed.ToString())+" [INFO]      User rights 'Log on as a service', 'Generate security audits' added for $NewName" | Out-File $LogPath -Append 
     } 
              
@@ -347,13 +347,13 @@ Function Set-CertificateSecurity
          
         If (!$?) 
         { 
-            Write-Output "`t`tFailed to set private key permissions.`n`t`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" -NoNewline 
+            Write-Host "`t`tFailed to set private key permissions.`n`t`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" -NoNewline 
             ($ElapsedTime.Elapsed.ToString())+" [ERROR]     Failed setting permissions on key for thumbprint $certThumbprint - Setting the ACL did not succeed" | Out-File $LogPath -Append 
             $CertPerms = $false 
         } 
         Else 
         { 
-            Write-Output "`t`tSuccess" -ForegroundColor "green" -NoNewline 
+            Write-Host "`t`tSuccess" -ForegroundColor "green" -NoNewline 
             ($ElapsedTime.Elapsed.ToString())+" [INFO]      Set permissions on key for thumbprint $certThumbprint" | Out-File $LogPath -Append 
             $CertPerms = $true 
         } 
@@ -361,7 +361,7 @@ Function Set-CertificateSecurity
  
     Else 
     { 
-        Write-Output "`t`tFailed to set private key permissions.`n`t`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" -NoNewline 
+        Write-Host "`t`tFailed to set private key permissions.`n`t`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" -NoNewline 
         ($ElapsedTime.Elapsed.ToString())+" [ERROR]     Failed setting permissions on key for thumbprint $certThumbprint - Unique key container did not exist" | Out-File $LogPath -Append 
         $CertPerms = $false 
     } 
@@ -399,13 +399,13 @@ Function Set-CertificateSharingContainerSecurity
      
     If (!$?) 
     { 
-        Write-Output "`tFailed to set permissions on the Certificate Sharing Container.`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" -NoNewline 
+        Write-Host "`tFailed to set permissions on the Certificate Sharing Container.`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" -NoNewline 
         ($ElapsedTime.Elapsed.ToString())+" [ERROR]     Failed setting permissions on AD cert sharing container: $DN. $NewName needs 'Create Child', 'Write', 'Read'." | Out-File $LogPath -Append 
         $FailedLdap = $true 
     } 
     Else 
     { 
-        Write-Output "`tSuccess" -ForegroundColor "green" -NoNewline 
+        Write-Host "`tSuccess" -ForegroundColor "green" -NoNewline 
         ($ElapsedTime.Elapsed.ToString())+" [INFO]      Set permissions on cert sharing container: $DN" | Out-File $LogPath -Append 
     } 
 } 
@@ -417,7 +417,7 @@ Function GenerateSQLScripts
     # Generate SetPermissions.sql 
     If (!(Test-Path $env:Temp\ADFSSQLScripts)) { New-Item $env:Temp\ADFSSQLScripts -type directory | Out-Null } 
     If (Test-Path $env:Temp\ADFSSQLScripts) { Remove-Item $env:Temp\ADFSSQLScripts\* | Out-Null } 
-    Write-Output "`n Generating SQL scripts" 
+    Write-Host "`n Generating SQL scripts" 
     ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Generating SQL scripts ($env:Temp\ADFSSQLScripts)" | Out-File $LogPath -Append 
      
     $WinDir = (Get-ChildItem Env:WinDir).Value 
@@ -425,7 +425,7 @@ Function GenerateSQLScripts
          
     If (!$?) 
     { 
-        Write-Output "`tFailed to generate SQL scripts. Exiting" -ForegroundColor "red" 
+        Write-Host "`tFailed to generate SQL scripts. Exiting" -ForegroundColor "red" 
         ($ElapsedTime.Elapsed.ToString())+" [ERROR]     Failed to generate SQL scripts" | Out-File $LogPath -Append 
         Return $false 
     } 
@@ -442,7 +442,7 @@ Function GenerateSQLScripts
      
         If (!$?) 
         { 
-            Write-Output "`tFailed to generate UpdateServiceSettings.sql. Exiting" -ForegroundColor "red" 
+            Write-Host "`tFailed to generate UpdateServiceSettings.sql. Exiting" -ForegroundColor "red" 
             ($ElapsedTime.Elapsed.ToString())+" [ERROR]     Failed to generate UpdateServiceSettings.sql" | Out-File $LogPath -Append 
             Return $false 
         } 
@@ -466,7 +466,7 @@ Function ExecuteSQLScripts
       
     If (!$?) 
     { 
-        Write-Output "`tFailed to execute SetPermissions.sql. Exiting" -ForegroundColor "red" 
+        Write-Host "`tFailed to execute SetPermissions.sql. Exiting" -ForegroundColor "red" 
         ($ElapsedTime.Elapsed.ToString())+" [ERROR]     Failed to execute SetPermissions.sql" | Out-File $LogPath -Append 
         Return $false 
     } 
@@ -479,7 +479,7 @@ Function ExecuteSQLScripts
       
         If (!$?) 
         { 
-            Write-Output "`tFailed to execute UpdateServiceSettings.sql. Exiting...." -ForegroundColor "red" 
+            Write-Host "`tFailed to execute UpdateServiceSettings.sql. Exiting...." -ForegroundColor "red" 
             ($ElapsedTime.Elapsed.ToString())+" [ERROR]     Failed to execute UpdateServiceSettings.sql" | Out-File $LogPath -Append 
             Return $false 
         } 
@@ -523,7 +523,7 @@ function Update-AdfsServiceAccountRule
     #Backup service settings prior to adding new rule
     $BackUpPath = ((Convert-Path .) + "\serviceSettingsData" + "-" + (get-date -f yyyy-MM-dd-hh-mm-ss) + ".xml") -replace '\s',''
     Get-DataContractSerializedString -object $Properties | Export-Clixml $BackUpPath
-    Write-Output ("Backup of current service settings stored at $BackUpPath")
+    Write-Host ("Backup of current service settings stored at $BackUpPath")
 
 
     if($RemoveRule)
@@ -531,22 +531,22 @@ function Update-AdfsServiceAccountRule
         $AuthorizationPolicyRules = [AdfsRules]::new($Properties.PolicyStore.AuthorizationPolicy) 
         if($AuthorizationPolicyRules.RemoveRule($ServiceAccountRule))
         {
-            Write-Output "Service account $ServiceAccount with SID $SID was removed from the Authorization Policy rule set"
+            Write-Host "Service account $ServiceAccount with SID $SID was removed from the Authorization Policy rule set"
         }
         else
         {
-             Write-Output "Service account $ServiceAccount with SID $SID was not found in the Authorization Policy rule set"
+             Write-Host "Service account $ServiceAccount with SID $SID was not found in the Authorization Policy rule set"
         }
         $Properties.PolicyStore.AuthorizationPolicy = $AuthorizationPolicyRules.ToString()
 
         $AuthorizationPolicyReadOnlyRules = [AdfsRules]::new($Properties.PolicyStore.AuthorizationPolicyReadOnly) 
         if($AuthorizationPolicyReadOnlyRules.RemoveRule($ServiceAccountRule))
         {
-            Write-Output "Service account $ServiceAccount with SID $SID was removed from the Authorization Policy Read Only rule set"
+            Write-Host "Service account $ServiceAccount with SID $SID was removed from the Authorization Policy Read Only rule set"
         }
         else
         {
-            Write-Output "Service account $ServiceAccount with SID $SID was not found in the Authorization Policy Read Only rule set"
+            Write-Host "Service account $ServiceAccount with SID $SID was not found in the Authorization Policy Read Only rule set"
         }
         $Properties.PolicyStore.AuthorizationPolicyReadOnly = $AuthorizationPolicyReadOnlyRules.ToString()
 
@@ -557,10 +557,10 @@ function Update-AdfsServiceAccountRule
         $AuthorizationPolicyRules = [AdfsRules]::new($Properties.PolicyStore.AuthorizationPolicy)
         if($AuthorizationPolicyRules.FindIndexForRule($ServiceAccountRule) -ne -1)
         {
-            Write-Output "Service account rule already exists."
+            Write-Host "Service account rule already exists."
             return $true
         }
-        Write-Output "Adding rule for service account $ServiceAccount with SID $SID to Authorization Policy and Authorization Policy Read Only rule sets"
+        Write-Host "Adding rule for service account $ServiceAccount with SID $SID to Authorization Policy and Authorization Policy Read Only rule sets"
 
         $Properties.PolicyStore.AuthorizationPolicy = $Properties.PolicyStore.AuthorizationPolicy + $ServiceAccountRule
         $Properties.PolicyStore.AuthorizationPolicyReadOnly = $Properties.PolicyStore.AuthorizationPolicyReadOnly + $ServiceAccountRule
@@ -633,14 +633,14 @@ function Restore-AdfsSettingsFromBackup
 
     if(-not (Test-Path $BackupPath))
     {
-        Write-Output "The provided path to the backup file was not found."
+        Write-Host "The provided path to the backup file was not found."
         return $false
     }
 
     #Receive user confirmation
     if(-not $PSCmdlet.ShouldProcess("A write to the AD FS configuration database will occur", "This script will write directly to the AD FS configuration database. Are you sure you want to proceed?", "Confrim"))
     {
-        Write-Output "Terminating execution of script"
+        Write-Host "Terminating execution of script"
         return $false
     }
 
@@ -686,7 +686,7 @@ function Add-AdfsServiceAccountRule
     #Receive user confirmation
     if(-not $PSCmdlet.ShouldProcess("A write to the AD FS configuration database will occur", "This script will write directly to the AD FS configuration database. Are you sure you want to proceed?", "Confrim"))
     {
-        Write-Output "Terminating execution of script"
+        Write-Host "Terminating execution of script"
         return $false
     }
 
@@ -721,7 +721,7 @@ function Remove-AdfsServiceAccountRule
     #Receive user confirmation
     if(-not $PSCmdlet.ShouldProcess("A write to the AD FS configuration database will occur", "This script will write directly to the AD FS configuration database. Are you sure you want to proceed?", "Confrim"))
     {
-        Write-Output "Terminating execution of script"
+        Write-Host "Terminating execution of script"
         return $false
     }
 
@@ -747,31 +747,31 @@ function Update-AdfsServiceAccount
     $OSVersion = [System.Environment]::OSVersion.Version 
   
     # Show header, show AS-IS statement, detail sample changes made, prompt if ready to continue 
-    Write-Output "`n IMPORTANT: This sample is provided AS-IS with no warranties and confers no rights." -ForegroundColor "yellow" 
-    Write-Output "`n This sample is intended only for Federation Server farms. If your AD FS 2.x deployment type is Standalone," -ForegroundColor "yellow" 
-    Write-Output " this sample does not apply to your Federation Service." -ForegroundColor "yellow" 
-    Write-Output "`n The following changes will occur as a result of executing this sample:`n`t1. The AD FS service will be stopped" 
-    Write-Output "`t2. The AD FS database permissions will be altered to allow access for the new account" 
-    Write-Output "`t3. A servicePrincipalName registration will be removed from the old account and registered to the new account" 
-    Write-Output "`t4. The AD FS service and AdfsAppPool identity will be changed to the new account" 
-    Write-Output "`t5. Certificate private key permissions will be modified to allow access for the new account" 
-    Write-Output "`t6. The new account will be allowed user rights: `"Log on as a service`" and `"Generate security audits`"" 
-    Write-Output "`n PRE-EXECUTION TASKS" -ForegroundColor "yellow" 
-    Write-Output " 1. Create the new service account in Active Directory" -ForegroundColor "yellow" 
-    Write-Output " 2. Install SQLCmd.exe on each Federation Server in the farm" -ForegroundColor "yellow" 
-    Write-Output "`tSQLCmd.exe requires the SQL Native Client to be installed" -ForegroundColor "yellow" 
-    Write-Output "`tAfter SQLCmd.exe has been installed, all Powershell windows must be" -ForegroundColor "yellow" 
-    Write-Output "`tclosed and re-opened to continue with execution of this sample." -ForegroundColor "yellow" 
-    Write-Output "`n`tDownload both installers from the following location`:`n`thttp://www.microsoft.com/download/en/details.aspx?id=15748" -ForegroundColor "yellow" 
+    Write-Host "`n IMPORTANT: This sample is provided AS-IS with no warranties and confers no rights." -ForegroundColor "yellow" 
+    Write-Host "`n This sample is intended only for Federation Server farms. If your AD FS 2.x deployment type is Standalone," -ForegroundColor "yellow" 
+    Write-Host " this sample does not apply to your Federation Service." -ForegroundColor "yellow" 
+    Write-Host "`n The following changes will occur as a result of executing this sample:`n`t1. The AD FS service will be stopped" 
+    write-host "`t2. The AD FS database permissions will be altered to allow access for the new account" 
+    Write-Host "`t3. A servicePrincipalName registration will be removed from the old account and registered to the new account" 
+    Write-Host "`t4. The AD FS service and AdfsAppPool identity will be changed to the new account" 
+    Write-Host "`t5. Certificate private key permissions will be modified to allow access for the new account" 
+    Write-Host "`t6. The new account will be allowed user rights: `"Log on as a service`" and `"Generate security audits`"" 
+    Write-Host "`n PRE-EXECUTION TASKS" -ForegroundColor "yellow" 
+    Write-Host " 1. Create the new service account in Active Directory" -ForegroundColor "yellow" 
+    Write-Host " 2. Install SQLCmd.exe on each Federation Server in the farm" -ForegroundColor "yellow" 
+    Write-Host "`tSQLCmd.exe requires the SQL Native Client to be installed" -ForegroundColor "yellow" 
+    Write-Host "`tAfter SQLCmd.exe has been installed, all Powershell windows must be" -ForegroundColor "yellow" 
+    Write-Host "`tclosed and re-opened to continue with execution of this sample." -ForegroundColor "yellow" 
+    Write-Host "`n`tDownload both installers from the following location`:`n`thttp://www.microsoft.com/download/en/details.aspx?id=15748" -ForegroundColor "yellow" 
  
-    Write-Output "`n If you are ready to proceed, type capital C and press Enter to continue: " -NoNewline 
+    Write-Host "`n If you are ready to proceed, type capital C and press Enter to continue: " -NoNewline 
     $Answer = "notready" 
     $LogPath = "$pwd\ADFS_Change_Service_Account.log" 
     $Answer = Read-Host 
  
     If ($Answer -cne "C")  
     {  
-        Write-Output "`tExiting`n" -ForegroundColor "red" 
+        Write-Host "`tExiting`n" -ForegroundColor "red" 
         ($ElapsedTime.Elapsed.ToString())+" [ERROR]     Bad selection at the prompt to continue with sample execution" | Out-File $LogPath 
         exit 
     } 
@@ -782,15 +782,15 @@ function Update-AdfsServiceAccount
     $OpMode1 = "Federation Server" 
     $OpMode2 = "Final Federation Server" 
  
-    Write-Output "`n Note: The sample must be executed against each Federation Server in the farm." -ForegroundColor "yellow" 
-    Write-Output " Windows Internal Database (WID) and SQL farms are supported. Before execution can" -ForegroundColor "yellow" 
-    Write-Output " begin, an operating mode must be selected. Careful consideration of the following" -ForegroundColor "yellow" 
-    Write-Output " guidance is necessary to ensure the sample is executed properly on each server." -ForegroundColor "yellow" 
-    Write-Output "`n GUIDANCE FOR SELECTING AN OPERATING MODE:" -ForegroundColor "yellow" 
-    Write-Output "`n WID FARM:`n The sample must be executed on all Secondary servers before execution should" -ForegroundColor "yellow" 
-    Write-Output " occur on the Primary server. The Primary server is the only server with Write access to the" -ForegroundColor "yellow" 
-    Write-Output " configuration database. The Primary server must be used as the 'Final Federation Server'" -ForegroundColor "yellow" 
-    Write-Output "`n Powershell command to determine whether a server is Primary or Secondary:" -ForegroundColor "yellow" 
+    Write-Host "`n Note: The sample must be executed against each Federation Server in the farm." -ForegroundColor "yellow" 
+    Write-Host " Windows Internal Database (WID) and SQL farms are supported. Before execution can" -ForegroundColor "yellow" 
+    Write-Host " begin, an operating mode must be selected. Careful consideration of the following" -ForegroundColor "yellow" 
+    Write-Host " guidance is necessary to ensure the sample is executed properly on each server." -ForegroundColor "yellow" 
+    Write-Host "`n GUIDANCE FOR SELECTING AN OPERATING MODE:" -ForegroundColor "yellow" 
+    Write-Host "`n WID FARM:`n The sample must be executed on all Secondary servers before execution should" -ForegroundColor "yellow" 
+    Write-Host " occur on the Primary server. The Primary server is the only server with Write access to the" -ForegroundColor "yellow" 
+    Write-Host " configuration database. The Primary server must be used as the 'Final Federation Server'" -ForegroundColor "yellow" 
+    Write-Host "`n Powershell command to determine whether a server is Primary or Secondary:" -ForegroundColor "yellow" 
  
     #check for Vista, 7, or 8 
     $OSVersion = [System.Environment]::OSVersion.Version 
@@ -798,7 +798,7 @@ function Update-AdfsServiceAccount
  
     If (($OSVersion.Major -lt 6) -or ( ($OSVersion.Major -eq 6) -and ($OSVersion.Minor -lt 3) )) 
     { 
-      Write-Output "`tExiting`n" -ForegroundColor "red" 
+      Write-Host "`tExiting`n" -ForegroundColor "red" 
       ($ElapsedTime.Elapsed.ToString())+" [ERROR]     This script is only applicable on Windows Server 2012 R2 and later" | Out-File $LogPath 
       exit 
     } 
@@ -807,22 +807,22 @@ function Update-AdfsServiceAccount
 
     If( ($feature -eq $null) -or ($feature.Installed -eq $false) ) 
     { 
-      Write-Output "`tExiting`n" -ForegroundColor "red" 
+      Write-Host "`tExiting`n" -ForegroundColor "red" 
       ($ElapsedTime.Elapsed.ToString())+" [ERROR]     This script is only applicable on a machine where AD FS is already installed" | Out-File $LogPath 
       exit 
     } 
  
-    Write-Output "`tImport-Module ADFS" -ForegroundColor "yellow" 
+    Write-Host "`tImport-Module ADFS" -ForegroundColor "yellow" 
     Import-Module ADFS -ErrorAction Stop 
  
  
-    Write-Output "`tGet-AdfsSyncProperties" -ForegroundColor "yellow" 
-    Write-Output "`n SQL FARM:`n Any one server in the farm should be selected as the 'Final Federation Server'." -ForegroundColor "yellow" 
-    Write-Output " All servers in a SQL farm have Write access to the configuration database. Execute the sample on all other" -ForegroundColor "yellow" 
-    Write-Output " servers in the farm before executing the sample on the server selected as the 'Final Federation Server'" -ForegroundColor "yellow" 
+    Write-Host "`tGet-AdfsSyncProperties" -ForegroundColor "yellow" 
+    Write-Host "`n SQL FARM:`n Any one server in the farm should be selected as the 'Final Federation Server'." -ForegroundColor "yellow" 
+    Write-Host " All servers in a SQL farm have Write access to the configuration database. Execute the sample on all other" -ForegroundColor "yellow" 
+    Write-Host " servers in the farm before executing the sample on the server selected as the 'Final Federation Server'" -ForegroundColor "yellow" 
  
  
-    Write-Output "`n Select operating mode:`n`t1 - $OpMode1`n`t2 - $OpMode2" 
+    Write-Host "`n Select operating mode:`n`t1 - $OpMode1`n`t2 - $OpMode2" 
     ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Getting operating mode" | Out-File $LogPath -Append 
  
     While (($Mode -ne 1) -and ($Mode -ne 2)) 
@@ -831,7 +831,7 @@ function Update-AdfsServiceAccount
      
         If (($Mode -ne 1) -and ($Mode -ne 2)) 
         { 
-            Write-Output "`t$Mode is not a valid selection" -ForegroundColor "yellow" 
+            Write-Host "`t$Mode is not a valid selection" -ForegroundColor "yellow" 
         } 
     } 
  
@@ -844,18 +844,18 @@ function Update-AdfsServiceAccount
         $SelOpMode = $OpMode2 
     } 
  
-    Write-Output "`tOperating mode: $SelOpMode" -ForegroundColor "green" 
+    Write-Host "`tOperating mode: $SelOpMode" -ForegroundColor "green" 
     ($ElapsedTime.Elapsed.ToString())+" [INFO]      Operating mode: $SelOpMode" | Out-File $LogPath -Append 
  
     # Check for the AD FS service 
  
-    Write-Output " Checking the AD FS service" 
+    Write-Host " Checking the AD FS service" 
     ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Checking for service installation (adfssrv)" | Out-File $LogPath -Append 
     $ADFSInstalled = Get-Service adfssrv 
  
     If (!$ADFSInstalled) 
     { 
-        Write-Output "`tThe AD FS service was not found. Exiting`n" -ForegroundColor "red" 
+        Write-Host "`tThe AD FS service was not found. Exiting`n" -ForegroundColor "red" 
         ($ElapsedTime.Elapsed.ToString())+" [ERROR]     adfssrv is not installed" | Out-File $LogPath -Append 
         Exit 
     } 
@@ -866,14 +866,14 @@ function Update-AdfsServiceAccount
         # Check to see if adfssrv is running. If stopped, attempt to start. If start fails, exit. 
         If ($ADFSInstalled.Status -ceq "Stopped") 
         { 
-            Write-Output "`tThe AD FS service is stopped. Starting the service`n" -ForegroundColor "yellow" -NoNewline 
+            Write-Host "`tThe AD FS service is stopped. Starting the service`n" -ForegroundColor "yellow" -NoNewline 
             ($ElapsedTime.Elapsed.ToString())+" [WARN]      adfssrv is stopped. Attempting to start" | Out-File $LogPath -Append 
             $ADFSInstalled.Start() 
             $ADFSInstalled.WaitForStatus("Running",[System.TimeSpan]::FromSeconds(25)) 
          
             If (!$?) 
             { 
-                Write-Output "`tThe AD FS service could not be started. Exiting" -ForegroundColor "red" 
+                Write-Host "`tThe AD FS service could not be started. Exiting" -ForegroundColor "red" 
                 ($ElapsedTime.Elapsed.ToString())+" [ERROR]     adfssrv failed to start" | Out-File $LogPath -Append 
                 Exit 
             } 
@@ -883,13 +883,13 @@ function Update-AdfsServiceAccount
             ($ElapsedTime.Elapsed.ToString())+" [INFO]      adfssrv is running" | Out-File $LogPath -Append 
         } 
        
-        Write-Output "`tSuccess" -ForegroundColor "green" -NoNewline 
+        Write-Host "`tSuccess" -ForegroundColor "green" -NoNewline 
     } 
  
  
    
     # Check if Fed Svc Name equals machine FQDN. This is not supported for farms. Breaks Kerberos. 
-    Write-Output "`n Checking the Federation Service Name" 
+    Write-Host "`n Checking the Federation Service Name" 
     ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Checking Federation Service Name" | Out-File $LogPath -Append 
  
     $ADFSProperties = Get-ADFSProperties 
@@ -897,16 +897,16 @@ function Update-AdfsServiceAccount
  
     If ($FederationServiceName -eq $MachineFQDN) 
     { 
-        Write-Output "`tFederation Service Name: $FederationServiceName`n`tFederation Service Name must not equal the qualified`n`tcomputer name in an AD FS farm." -ForegroundColor "red" 
-        Write-Output "`thttp://social.technet.microsoft.com/wiki/contents/articles/ad-fs-2-0-how-to-change-the-federation-service-name.aspx" -ForegroundColor "gray" 
-        Write-Output "`tExiting`n" -ForegroundColor "red" 
+        Write-Host "`tFederation Service Name: $FederationServiceName`n`tFederation Service Name must not equal the qualified`n`tcomputer name in an AD FS farm." -ForegroundColor "red" 
+        Write-Host "`thttp://social.technet.microsoft.com/wiki/contents/articles/ad-fs-2-0-how-to-change-the-federation-service-name.aspx" -ForegroundColor "gray" 
+        Write-Host "`tExiting`n" -ForegroundColor "red" 
         ($ElapsedTime.Elapsed.ToString())+" [ERROR]     Federation Service Name: $FederationServiceName equals the qualified computer name. This is not supported in a farm deployment" | Out-File $LogPath -Append 
         ($ElapsedTime.Elapsed.ToString())+" [ERROR]     http://social.technet.microsoft.com/wiki/contents/articles/ad-fs-2-0-how-to-change-the-federation-service-name.aspx" | Out-File $LogPath -Append 
         Exit 
     } 
     Else 
     { 
-        Write-Output "`tSuccess" -ForegroundColor "green" 
+        Write-Host "`tSuccess" -ForegroundColor "green" 
         ($ElapsedTime.Elapsed.ToString())+" [INFO]      Federation Service Name is OK" | Out-File $LogPath -Append 
     } 
  
@@ -918,14 +918,14 @@ function Update-AdfsServiceAccount
         $NewName = "foo" 
         While (($NewName -match " ") -or ($NewName -match "networkservice") -or ($NewName -match "localsystem") -or (($NewName -notmatch "\\") -and ($NewName -notmatch "`@"))) 
         { 
-            Write-Output " Collecting credentials for the new account" 
+            Write-Host " Collecting credentials for the new account" 
             ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Collecting new credentials" | Out-File $LogPath -Append 
             $NewName = (Read-Host "`tUsername (domain\user)").ToUpper() 
             ($ElapsedTime.Elapsed.ToString())+" [INFO]      New user name: $NewName" | Out-File $LogPath -Append 
      
             If (($NewName -match " ") -or ($NewName -match "networkservice") -or ($NewName -match "localsystem") -or (($NewName -notmatch "\\") -and ($NewName -notmatch "`@"))) 
             { 
-                Write-Output "`t$NewName is not supported. AD FS farms require a domain user account (domain\user)" -ForegroundColor "red" 
+                Write-Host "`t$NewName is not supported. AD FS farms require a domain user account (domain\user)" -ForegroundColor "red" 
                 ($ElapsedTime.Elapsed.ToString())+" [ERROR]     Unsupported new name entry: $NewName. Service account must be domain user" | Out-File $LogPath -Append 
             } 
         } 
@@ -945,7 +945,7 @@ function Update-AdfsServiceAccount
         If ($NewName.ToString() -match "`@") 
         { 
             $NewName = ((($NewName.Split("`@")[1]).ToString() + "\" + ($NewName.Split("`@")[0]).ToString()).ToUpper()) 
-            Write-Output "`n`tUsing $NewName in order to meet SPN requirements" -ForegroundColor "gray" 
+            Write-Host "`n`tUsing $NewName in order to meet SPN requirements" -ForegroundColor "gray" 
             ($ElapsedTime.Elapsed.ToString())+" [INFO]      Using $NewName in order to meet SPN requirements" | Out-File $LogPath -Append 
         } 
      
@@ -953,14 +953,14 @@ function Update-AdfsServiceAccount
        
         If ($IsGmsaAccount) 
         { 
-            Write-Output " gMSA account was specified. Skipping credential validation" 
+            Write-Host " gMSA account was specified. Skipping credential validation" 
             $CredsNotValidated = $false 
         } 
         Else 
         {  
    
             # Validating credentials 
-            Write-Output " Validating credentials" 
+            Write-Host " Validating credentials" 
             ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Validating credentials" | Out-File $LogPath -Append 
             $Domain = "LDAP://" + ([ADSI]"").distinguishedName 
             $DomainObject = New-Object System.DirectoryServices.DirectoryEntry($Domain,$NewName,$NewPassword) 
@@ -968,12 +968,12 @@ function Update-AdfsServiceAccount
             `$DomainObject.Name = `$DomainObject.Name 
             If ($DomainObject.Name -eq $null) 
             { 
-                Write-Output "`tFailed credential validation" -ForegroundColor "red" 
+                Write-Host "`tFailed credential validation" -ForegroundColor "red" 
                 ($ElapsedTime.Elapsed.ToString())+" [ERROR]     Failed credential validation" | Out-File $LogPath -Append 
             } 
             Else 
             { 
-                Write-Output "`tSuccess" -ForegroundColor "green" 
+                Write-Host "`tSuccess" -ForegroundColor "green" 
                 ($ElapsedTime.Elapsed.ToString())+" [INFO]      Credentials validated" | Out-File $LogPath -Append 
                 $CredsNotValidated = $false 
             } 
@@ -982,20 +982,20 @@ function Update-AdfsServiceAccount
  
     # Getting current identity for the AD FS 2.x Windows Service 
  
-    Write-Output " Discovering current account name" 
+    Write-Host " Discovering current account name" 
     ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Getting old name" | Out-File $LogPath -Append 
     $ADFSSvc = gwmi win32_service -filter "name='adfssrv'" 
  
     If (!$ADFSSvc) 
     { 
-        Write-Output "`tFailed to get the current account name. Exiting`n" -ForegroundColor "red" 
+        Write-Host "`tFailed to get the current account name. Exiting`n" -ForegroundColor "red" 
         ($ElapsedTime.Elapsed.ToString())+" [ERROR]     Could not get old name from WMI service information for adfssrv" | Out-File $LogPath -Append 
         exit 
     } 
     Else 
     { 
         $OldName = ((($ADFSSvc.StartName).ToString()).ToUpper()) 
-        Write-Output "`t$OldName" -ForegroundColor "Green" -NoNewline 
+        Write-Host "`t$OldName" -ForegroundColor "Green" -NoNewline 
         ($ElapsedTime.Elapsed.ToString())+" [INFO]      Old name: $OldName" | Out-File $LogPath -Append 
      
         If ($Mode -eq 2) 
@@ -1003,7 +1003,7 @@ function Update-AdfsServiceAccount
             # Check for network service and local system and set a variable to use the domain\computername for SPN work items 
             If ((($OldName).ToString() -eq "NT AUTHORITY\NETWORK SERVICE") -or (($OldName).ToString() -eq "NT AUTHORITY\LOCAL SYSTEM")) 
             { 
-                Write-Output "`tUsing $MachineDomainSlash in order to meet SPN requirements" -ForegroundColor "gray" 
+                Write-Host "`tUsing $MachineDomainSlash in order to meet SPN requirements" -ForegroundColor "gray" 
                 ($ElapsedTime.Elapsed.ToString())+" [INFO]      Using $MachineDomainSlash in order to meet SPN requirements" | Out-File $LogPath -Append 
                 $UseMachineFQDN = $true 
             } 
@@ -1012,7 +1012,7 @@ function Update-AdfsServiceAccount
             If ($OldName.ToString() -match "`@") 
             { 
                 $OldName = ($OldName.Split("`@")[1]).ToString() + "\" + ($OldName.Split("`@")[0]).ToString() 
-                Write-Output "`tUsing $OldName in order to meet SPN requirements" -ForegroundColor "gray" 
+                Write-Host "`tUsing $OldName in order to meet SPN requirements" -ForegroundColor "gray" 
                 ($ElapsedTime.Elapsed.ToString())+" [INFO]      Using $OldName in order to meet SPN requirements" | Out-File $LogPath -Append 
             } 
         } 
@@ -1030,7 +1030,7 @@ function Update-AdfsServiceAccount
    
     ####STOP THE AD FS WINDOWS SERVICE#### 
     
-    Write-Output "`n Stopping the AD FS service" 
+    Write-Host "`n Stopping the AD FS service" 
     ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Stopping adfssrv" | Out-File $LogPath -Append 
  
     # Stop the AD FS Windows service. No need to check status since Stop-Service does not throw if service is currently stopped. 
@@ -1039,29 +1039,29 @@ function Update-AdfsServiceAccount
  
     If (!$?) 
     { 
-        Write-Output "`tThe AD FS service could not be stopped.`n`tExiting`n" -ForegroundColor "red" 
+        Write-Host "`tThe AD FS service could not be stopped.`n`tExiting`n" -ForegroundColor "red" 
         ($ElapsedTime.Elapsed.ToString())+" [ERROR]     adfssrv could not be stopped" | Out-File $LogPath -Append 
         exit 
     } 
     Else 
     { 
-        Write-Output "`tSuccess" -ForegroundColor "green" -NoNewline 
+        Write-Host "`tSuccess" -ForegroundColor "green" -NoNewline 
         ($ElapsedTime.Elapsed.ToString())+" [INFO]      adfssrv is stopped" | Out-File $LogPath -Append 
     } 
  
     ####GETTING THE SQL HOST NAME#### 
  
     # Getting SQL host name 
-    Write-Output "`n Discovering SQL host" 
+    Write-Host "`n Discovering SQL host" 
     ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Discovering SQL host" | Out-File $LogPath -Append 
     $SQLHost = (($connString.ToString()).split("=")[1]).Split(";")[0] 
-    Write-Output "`t$SQLHost" -ForegroundColor "green" -NoNewline 
+    Write-Host "`t$SQLHost" -ForegroundColor "green" -NoNewline 
     ($ElapsedTime.Elapsed.ToString())+" [INFO]      SQL host: $SQLHost" | Out-File $LogPath -Append 
      
     ####DETECT DATABASE TYPE#### 
      
     # Detect WID or SQL 
-    Write-Output "`n Detecting database type" 
+    Write-Host "`n Detecting database type" 
     ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Detecting database type" | Out-File $LogPath -Append 
      
     if((IsWid -ConnectionString $connString) -eq $true)
@@ -1074,23 +1074,23 @@ function Update-AdfsServiceAccount
         $DBMode = "SQL" 
     }
      
-    Write-Output "`t$DBMode" -ForegroundColor "green" -NoNewline 
+    Write-Host "`t$DBMode" -ForegroundColor "green" -NoNewline 
     ($ElapsedTime.Elapsed.ToString())+" [INFO]      Database type: $DBMode" | Out-File $LogPath -Append 
      
     #check to be sure that the admin isn't attempting a mode that isn't suitable for the current FS's role 
      
     If ($DBMode -eq "WID") 
     { 
-        Write-Output "`n Checking operating mode against server role" 
+        Write-Host "`n Checking operating mode against server role" 
         ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Checking op mode against server role" | Out-File $LogPath -Append 
      
         If ((($Mode -eq 2) -and ($Role -eq "SecondaryComputer")) -or (($Mode -eq 1) -and ($Role -eq "PrimaryComputer"))) 
         { 
-            Write-Output "`tError: Operating mode and role mismatch. Operating mode $Mode cannot be executed`n`ton a server with role $Role`n`tAction: Select a valid operating mode for this server.`n`tExiting" -ForegroundColor "Red" 
+            Write-Host "`tError: Operating mode and role mismatch. Operating mode $Mode cannot be executed`n`ton a server with role $Role`n`tAction: Select a valid operating mode for this server.`n`tExiting" -ForegroundColor "Red" 
             ($ElapsedTime.Elapsed.ToString())+" [ERROR]     Op mode does not match server role. Mode: $Mode. Role: $Role" | Out-File $LogPath -Append 
             exit 
         } 
-        Write-Output "`tSuccess" -ForegroundColor "Green" -NoNewline 
+        Write-Host "`tSuccess" -ForegroundColor "Green" -NoNewline 
         ($ElapsedTime.Elapsed.ToString())+" [INFO]      Op mode matches server role" | Out-File $LogPath -Append 
     } 
      
@@ -1098,26 +1098,26 @@ function Update-AdfsServiceAccount
      
     If (!(($Mode -eq 1) -and ($DBMode -eq "SQL"))) 
     { 
-        Write-Output "`n Detecting SQLCmd.exe" 
+        Write-Host "`n Detecting SQLCmd.exe" 
         ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Detecting SQLCMD.exe" | Out-File $LogPath -Append 
         $SQLCmdPresent = $false 
         sqlcmd.exe /? | Out-Null 
      
         If (!$?) 
         { 
-            Write-Output "`tSQLCmd.exe was not found`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY." -ForegroundColor "yellow" -NoNewline 
+            Write-Host "`tSQLCmd.exe was not found`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY." -ForegroundColor "yellow" -NoNewline 
             ($ElapsedTime.Elapsed.ToString())+" [WARN]      SQLCMD.exe not found. SQL scripts must be manually executed." | Out-File $LogPath -Append 
         } 
         Else 
         { 
-            Write-Output "`tSuccess" -ForegroundColor "green" -NoNewline 
+            Write-Host "`tSuccess" -ForegroundColor "green" -NoNewline 
             ($ElapsedTime.Elapsed.ToString())+" [INFO]      SQLCMD.exe found" | Out-File $LogPath -Append 
             $SQLCmdPresent = $true 
         } 
     } 
  
     ####CONVERTING NAMES TO SIDS#### 
-    Write-Output "`n Converting $OldName to SID" 
+    Write-Host "`n Converting $OldName to SID" 
     ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Convert $OldName to SID" | Out-File $LogPath -Append 
      
     # Get SID for the old account into a variable 
@@ -1125,17 +1125,17 @@ function Update-AdfsServiceAccount
      
     If (!$OldSID) 
     { 
-        Write-Output "`tName to SID translation failed for `"$OldName`".`n`tExiting`n" -ForegroundColor "red" 
+        Write-Host "`tName to SID translation failed for `"$OldName`".`n`tExiting`n" -ForegroundColor "red" 
         ($ElapsedTime.Elapsed.ToString())+" [ERROR]     $OldName SID translation failed" | Out-File $LogPath -Append 
         exit 
     } 
     Else 
     { 
-        Write-Output "`t$OldSID" -ForegroundColor "green" -NoNewline 
+        Write-Host "`t$OldSID" -ForegroundColor "green" -NoNewline 
         ($ElapsedTime.Elapsed.ToString())+" [INFO]      Old SID: $OldSID" | Out-File $LogPath -Append 
     } 
        
-    Write-Output "`n Converting $NewName to SID" 
+    Write-Host "`n Converting $NewName to SID" 
     ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Convert $NewName to SID" | Out-File $LogPath -Append 
  
     #Get SID for the new account into a variable 
@@ -1143,24 +1143,24 @@ function Update-AdfsServiceAccount
      
     If (!$NewSID) 
     { 
-        Write-Output "`tName to SID translation failed for `"$NewName`".`n`tEnsure that the new service account name is typed correctly. Exiting`n" -ForegroundColor "red" 
+        Write-Host "`tName to SID translation failed for `"$NewName`".`n`tEnsure that the new service account name is typed correctly. Exiting`n" -ForegroundColor "red" 
         ($ElapsedTime.Elapsed.ToString())+" [ERROR]     $NewName SID translation failed" | Out-File $LogPath -Append 
                 exit 
     } 
     Else 
     { 
-        Write-Output "`t$NewSID" -ForegroundColor "green" -NoNewline 
+        Write-Host "`t$NewSID" -ForegroundColor "green" -NoNewline 
         ($ElapsedTime.Elapsed.ToString())+" [INFO]      New SID: $NewSID" | Out-File $LogPath -Append 
     } 
        
     If ($NewSID -eq $OldSID) 
     { 
-        Write-Output "`n The old and new accounts are the same, do you wish to proceed?" -ForegroundColor "yellow" 
+        Write-Host "`n The old and new accounts are the same, do you wish to proceed?" -ForegroundColor "yellow" 
         $SameAccountAnswer = Read-Host "`t(Y/N)" 
          
         If ($SameAccountAnswer -ne "y") 
         { 
-            Write-Output "`tExiting`n" -ForegroundColor "red" 
+            Write-Host "`tExiting`n" -ForegroundColor "red" 
             Exit 
         } 
     } 
@@ -1176,7 +1176,7 @@ function Update-AdfsServiceAccount
         } 
         Else 
         { 
-            Write-Output "`tSuccess" -ForegroundColor "green" -NoNewline 
+            Write-Host "`tSuccess" -ForegroundColor "green" -NoNewline 
             ($ElapsedTime.Elapsed.ToString())+" [INFO]      SQL scripts generated" | Out-File $LogPath -Append 
         } 
     } 
@@ -1185,7 +1185,7 @@ function Update-AdfsServiceAccount
      
     if (($DBMode -eq "SQL") -and ($Mode -eq 2)) 
     { 
-        Write-Output "`n Does the currently logged on user have administrative access to the AD FS databases within SQL server`?" 
+        Write-Host "`n Does the currently logged on user have administrative access to the AD FS databases within SQL server`?" 
         ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Discovering if current user is SQL admin" | Out-File $LogPath -Append 
         $SQLAnswser = "foo" 
                  
@@ -1197,7 +1197,7 @@ function Update-AdfsServiceAccount
         # If the user has permissions in SQL and SQLCmd.exe is present, run the scripts, otherwise, explain how they must perform this step manually. 
            if (($SQLAnswer -eq "Y") -and ($SQLCmdPresent)) 
            { 
-                Write-Output " Executing SQL scripts" 
+                Write-Host " Executing SQL scripts" 
                 ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Executing SQL scripts using SQLCMD.exe" | Out-File $LogPath -Append 
                 $ExecuteSQLScripts = ExecuteSQLScripts 
              
@@ -1207,7 +1207,7 @@ function Update-AdfsServiceAccount
                 } 
                 Else 
                 { 
-                    Write-Output "`tSuccess" -ForegroundColor "green" -NoNewline 
+                    Write-Host "`tSuccess" -ForegroundColor "green" -NoNewline 
                     ($ElapsedTime.Elapsed.ToString())+" [INFO]      SQL scripts executed successfully" | Out-File $LogPath -Append 
                 } 
             } 
@@ -1229,7 +1229,7 @@ function Update-AdfsServiceAccount
             # We don't care if they are an admin in SQL Server, so only need to check to see if SQLCmd.exe is installed. Run the scripts, otherwise, explain how they must perform steps manually 
             if ($SQLCmdPresent) 
             { 
-                Write-Output "`n Executing SQL scripts" 
+                Write-Host "`n Executing SQL scripts" 
                 ($ElapsedTime.Elapsed.ToString())+" [INFO]      Executing SQL scripts using SQLCMD.exe" | Out-File $LogPath -Append 
                 $ExecuteSQLScripts = ExecuteSQLScripts 
              
@@ -1239,7 +1239,7 @@ function Update-AdfsServiceAccount
                 } 
                 Else 
                 { 
-                    Write-Output "`tSuccess" -ForegroundColor "green" -NoNewline 
+                    Write-Host "`tSuccess" -ForegroundColor "green" -NoNewline 
                     ($ElapsedTime.Elapsed.ToString())+" [INFO]      SQL scripts executed successfully" | Out-File $LogPath -Append 
                 } 
             } 
@@ -1256,59 +1256,59 @@ function Update-AdfsServiceAccount
        
             If ($UseMachineFQDN) 
             { 
-                Write-Output "`n Removing SPN HOST/$FederationServiceName from $MachineDomainSlash" 
+                Write-Host "`n Removing SPN HOST/$FederationServiceName from $MachineDomainSlash" 
                 ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Removing SPN HOST/$FederationServiceName from $MachineDomainSlash" | Out-File $LogPath -Append 
                setspn.exe -D HOST/$FederationServiceName $MachineDomainSlash | Out-File $LogPath -Append 
          
                 If (!$?) 
                 { 
-                    Write-Output "`tRemoving SPN failed`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY." -ForegroundColor "yellow" -NoNewline 
+                    Write-Host "`tRemoving SPN failed`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY." -ForegroundColor "yellow" -NoNewline 
                     ($ElapsedTime.Elapsed.ToString())+" [WARN]      Removing SPN failed: HOST/$FederationServiceName from $MachineDomainSlash" | Out-File $LogPath -Append 
                     ($ElapsedTime.Elapsed.ToString())+" [WARN]      setspn.exe -D HOST/$FederationServiceName $MachineDomainSlash" | Out-File $LogPath -Append 
                     $FailedSpn = $true 
                 } 
                 Else 
                 { 
-                    Write-Output "`tSuccess" -ForegroundColor "green" -NoNewline 
+                    Write-Host "`tSuccess" -ForegroundColor "green" -NoNewline 
                     ($ElapsedTime.Elapsed.ToString())+" [INFO]      SPN removed: HOST/$FederationServiceName from $MachineDomainSlash" | Out-File $LogPath -Append 
                 } 
             } 
             Else 
             { 
-                Write-Output "`n Removing SPN HOST/$FederationServiceName from $OldName" 
+                Write-Host "`n Removing SPN HOST/$FederationServiceName from $OldName" 
                 ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Removing SPN HOST/$FederationServiceName from $OldName" | Out-File $LogPath -Append 
                 setspn.exe -D HOST/$FederationServiceName $OldName | Out-File $LogPath -Append 
          
                 If (!$?) 
                 { 
-                    Write-Output "`tRemoving SPN failed`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" -NoNewline 
+                    Write-Host "`tRemoving SPN failed`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" -NoNewline 
                     ($ElapsedTime.Elapsed.ToString())+" [WARN]      Removing SPN failed: HOST/$FederationServiceName from $OldName" | Out-File $LogPath -Append 
                     ($ElapsedTime.Elapsed.ToString())+" [WARN]      setspn.exe -D HOST/$FederationServiceName $OldName" | Out-File $LogPath -Append 
                     $FailedSpn = $true 
                 } 
                 Else 
                 { 
-                    Write-Output "`tSuccess" -ForegroundColor "green" -NoNewline 
+                    Write-Host "`tSuccess" -ForegroundColor "green" -NoNewline 
                     ($ElapsedTime.Elapsed.ToString())+" [INFO]      SPN removed: HOST/$FederationServiceName from $OldName" | Out-File $LogPath -Append 
                 } 
             } 
  
             ####ADD THE SPN TO THE NEW SERVICE ACCOUNT#### 
      
-            Write-Output "`n Registering SPN HOST/$FederationServiceName to $NewName" 
+            Write-Host "`n Registering SPN HOST/$FederationServiceName to $NewName" 
             ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Registering SPN HOST/$FederationServiceName to $NewName" | Out-File $LogPath -Append 
             setspn.exe -S HOST/$FederationServiceName $NewName | Out-File $LogPath -Append 
  
             If (!$?) 
             { 
-                Write-Output "`tRegistering SPN failed`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" -NoNewline 
+                Write-Host "`tRegistering SPN failed`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" -NoNewline 
                 ($ElapsedTime.Elapsed.ToString())+" [WARN]      Registering SPN failed: HOST/$FederationServiceName to $NewName" | Out-File $LogPath -Append 
                 ($ElapsedTime.Elapsed.ToString())+" [WARN]      setspn.exe -S HOST/$FederationServiceName $NewName" | Out-File $LogPath -Append 
                 $FailedSpn = $true 
             } 
             Else 
             { 
-                Write-Output "`tSuccess" -ForegroundColor "green" -NoNewline 
+                Write-Host "`tSuccess" -ForegroundColor "green" -NoNewline 
                 ($ElapsedTime.Elapsed.ToString())+" [INFO]      SPN registered: HOST/$FederationServiceName to $NewName" | Out-File $LogPath -Append 
             } 
         } 
@@ -1316,14 +1316,14 @@ function Update-AdfsServiceAccount
     ####SET THE IDENTITY OF THE AD FS WINDOWS SERVICE TO THE NEW SERVICE ACCOUNT#### 
  
     # Setting identity for the AD FS Windows Service to the new service account 
-    Write-Output "`n Setting the AD FS service identity to $NewName" 
+    Write-Host "`n Setting the AD FS service identity to $NewName" 
     ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Setting new service identity for adfssrv to $NewName" | Out-File $LogPath -Append 
  
     $ADFSSvc = gwmi win32_service -filter "name='adfssrv'" 
  
     If (!$ADFSSvc) 
     { 
-        Write-Output "`tFailed to get information about the AD FS service." -ForegroundColor "yellow" -NoNewline 
+        Write-Host "`tFailed to get information about the AD FS service." -ForegroundColor "yellow" -NoNewline 
         ($ElapsedTime.Elapsed.ToString())+" [WARN]      Failed to get WMI information for adfssrv from WMI" | Out-File $LogPath -Append 
     } 
  
@@ -1331,13 +1331,13 @@ function Update-AdfsServiceAccount
  
     If (!$?) 
     { 
-        Write-Output "`tFailed to set the identity of the AD FS service`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" -NoNewline 
+        Write-Host "`tFailed to set the identity of the AD FS service`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" -NoNewline 
         ($ElapsedTime.Elapsed.ToString())+" [WARN]      Failed to set identity for adfssrv to $NewName" | Out-File $LogPath -Append 
         $FailedServiceIdentity = $true 
     } 
     Else 
     { 
-        Write-Output "`tSuccess" -ForegroundColor "green" -NoNewline 
+        Write-Host "`tSuccess" -ForegroundColor "green" -NoNewline 
         ($ElapsedTime.Elapsed.ToString())+" [INFO]      Set identity of adfssrv to $NewName" | Out-File $LogPath -Append 
     } 
  
@@ -1347,13 +1347,13 @@ function Update-AdfsServiceAccount
         $kdssvc = Get-Service -Name "kdssvc" 
         If( ( $kdssvc -ne $null ) -and $IsGmsaAccount ) 
         { 
-            Write-Output "`n Setting HTTP/KdsSvc as a service dependency for ADFS Service" 
+            Write-Host "`n Setting HTTP/KdsSvc as a service dependency for ADFS Service" 
             ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Setting HTTP/KdsSvc as a service dependency for adfssrv" | Out-File $LogPath -Append 
             Start sc.exe -ArgumentList "config adfssrv depend=HTTP/KdsSvc" -Wait -WindowStyle Hidden | Out-File $LogPath -Append 
         } 
         Else 
         { 
-            Write-Output "`n Adding HTTP as a service dependency for ADFS Service" 
+            Write-Host "`n Adding HTTP as a service dependency for ADFS Service" 
             ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Setting HTTP as a service dependency for adfssrv" | Out-File $LogPath -Append 
             Start sc.exe -ArgumentList "config adfssrv depend=HTTP" -Wait -WindowStyle Hidden | Out-File $LogPath -Append 
         } 
@@ -1367,7 +1367,7 @@ function Update-AdfsServiceAccount
         # Check if CertificateSharingContainer has a value. If it does, ACL the container for the new service account. 
         If ($ADFSProperties.CertificateSharingContainer -ne $null) 
         { 
-            Write-Output "`n Providing $NewName access to the Certificate Sharing Container" 
+            Write-Host "`n Providing $NewName access to the Certificate Sharing Container" 
             ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Providing $NewName access to ($ADFSProperties.CertificateSharingContainer).ToString()" | Out-File $LogPath -Append 
             Set-CertificateSharingContainerSecurity -NewSID $NewSID 
         } 
@@ -1375,7 +1375,7 @@ function Update-AdfsServiceAccount
    
     ####ADD USER RIGHTS#### 
  
-    Write-Output "`n Adding user rights for $NewName" 
+    Write-Host "`n Adding user rights for $NewName" 
     ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Adding user rights for $NewName" | Out-File $LogPath -Append 
  
     # Execute for all opmodes 
@@ -1383,13 +1383,13 @@ function Update-AdfsServiceAccount
  
     ####START THE AD FS WINDOWS SERVICE#### 
     
-    Write-Output "`n Starting the AD FS service" 
+    Write-Host "`n Starting the AD FS service" 
     ($ElapsedTime.Elapsed.ToString())+" [WORK ITEM] Starting adfssrv" | Out-File $LogPath -Append 
  
     #check to see if SQL scripts need run. If yes, skip this step 
     If (($Mode -eq 1) -or $NeedsSQLWarning -or $FailedLdap -or $FailedServiceIdentity -or $FailedServiceStart -or $FailedSpn -or $FailedUserRights) 
     { 
-        Write-Output "`tSkipped`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" 
+        Write-Host "`tSkipped`n`tSee: POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" 
         ($ElapsedTime.Elapsed.ToString())+" [WARN]      Skipped starting adfssrv due to post-sample needs" | Out-File $LogPath -Append 
         $SkipServiceStart = $true 
     } 
@@ -1401,13 +1401,13 @@ function Update-AdfsServiceAccount
  
         If (!$?) 
         { 
-            Write-Output "`tFailed: The AD FS service could not be started.`n`tExamine the AD FS 2.0/Admin and AD FS 2.0 Tracing/Debug event logs for details." -ForegroundColor "red" 
+            Write-Host "`tFailed: The AD FS service could not be started.`n`tExamine the AD FS 2.0/Admin and AD FS 2.0 Tracing/Debug event logs for details." -ForegroundColor "red" 
             ($ElapsedTime.Elapsed.ToString())+" [ERROR]     adfssrv service failed to start. See Admin and Debug logs for details." | Out-File $LogPath -Append 
             $FailedServiceStart = $true 
         } 
         Else 
         { 
-            Write-Output "`tSuccess" -ForegroundColor "green" 
+            Write-Host "`tSuccess" -ForegroundColor "green" 
             ($ElapsedTime.Elapsed.ToString())+" [INFO]      adfssrv started" | Out-File $LogPath -Append 
         } 
     } 
@@ -1415,15 +1415,15 @@ function Update-AdfsServiceAccount
     ####NOTIFY ABOUT MANUALLY SETTING ITEMS 
  
     $NotifyCount = 1 
-    Write-Output "`n`n`n POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" 
+    Write-Host "`n`n`n POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" -ForegroundColor "yellow" 
     "`n`n`n POST-SAMPLE ITEMS THAT MUST BE EXECUTED MANUALLY" | Out-File $LogPath -Append 
  
     If ($FailedUserRights) 
     { 
-        Write-Output "`n`n $NotifyCount. You must manually set User Rights Assigment for $NewName" -ForegroundColor "yellow" 
-        Write-Output "    to allow `"Generate Security Audits`" and `"Log On As a Service`"." -ForegroundColor "yellow" 
-        Write-Output "`n    Steps:`n    Start -> Run -> GPEdit.msc -> Computer Configuration -> Windows Settings ->" -ForegroundColor "yellow" 
-        Write-Output "    Security Settings -> Local Policies -> User Rights Assignment" -ForegroundColor "yellow" 
+        Write-Host "`n`n $NotifyCount. You must manually set User Rights Assigment for $NewName" -ForegroundColor "yellow" 
+        Write-Host "    to allow `"Generate Security Audits`" and `"Log On As a Service`"." -ForegroundColor "yellow" 
+        Write-Host "`n    Steps:`n    Start -> Run -> GPEdit.msc -> Computer Configuration -> Windows Settings ->" -ForegroundColor "yellow" 
+        Write-Host "    Security Settings -> Local Policies -> User Rights Assignment" -ForegroundColor "yellow" 
         "`n`n $NotifyCount. You must manually set User Rights Assigment for $NewName" | Out-File $LogPath -Append 
         "    to allow `"Generate Security Audits`" and `"Log On As a Service`"." | Out-File $LogPath -Append 
         "`n    Steps:`n    Start -> Run -> GPEdit.msc -> Computer Configuration -> Windows Settings ->" | Out-File $LogPath -Append 
@@ -1433,9 +1433,9 @@ function Update-AdfsServiceAccount
  
     If ($FailedLdap) 
     { 
-        Write-Output "`n`n $NotifyCount. $NewName must have Read, Write, and Create Child permissions to the certificate" -ForegroundColor "yellow" 
-        Write-Output "    sharing container in AD. These permissions were not set during execution and must be set manually." -ForegroundColor "yellow" 
-        Write-Output "    LDAP path: $DN" -ForegroundColor "yellow" 
+        Write-Host "`n`n $NotifyCount. $NewName must have Read, Write, and Create Child permissions to the certificate" -ForegroundColor "yellow" 
+        Write-Host "    sharing container in AD. These permissions were not set during execution and must be set manually." -ForegroundColor "yellow" 
+        Write-Host "    LDAP path: $DN" -ForegroundColor "yellow" 
      
         "`n`n $NotifyCount. $NewName must have Read, Write, and Create Child permissions to the certificate" | Out-File $LogPath -Append 
         "    sharing container in AD. These permissions were not set during execution and must be set manually." | Out-File $LogPath -Append 
@@ -1447,16 +1447,16 @@ function Update-AdfsServiceAccount
     { 
         If ($DBMode -eq "SQL") 
         { 
-            Write-Output "`n`n $NotifyCount. Either the currently logged on user does not have appropriate permissions on the SQL Server," -ForegroundColor "yellow" 
-            Write-Output "    or SQLCmd.exe was not found on this system. You must provide your SQL DBA with the SetPermissions.sql" -ForegroundColor "yellow" 
-            Write-Output "    and UpdateServiceSettings.sql fileslocated in $env:Temp\ADFSSQLScripts." -ForegroundColor "yellow" 
-            Write-Output "    The DBA should execute these scripts on the SQL Server where the AD FS" -ForegroundColor "yellow" 
-            Write-Output "    Configuration and Artifact databases reside." -ForegroundColor "yellow" 
-            Write-Output "`n    Syntax:" -ForegroundColor "yellow"  
-            Write-Output "    sqlcmd.exe -S $SQLHost -i $env:Temp\ADFSSQLScripts\SetPermissions.sql" -ForegroundColor "yellow" 
-            Write-Output "    -o $env:Temp\ADFSSQLScripts\SetPermissions-output.log" -ForegroundColor "yellow" 
-            Write-Output "`n    sqlcmd.exe -S $SQLHost -i $env:Temp\ADFSSQLScripts\UpdateServiceSettings.sql" -ForegroundColor "yellow" 
-            Write-Output "    -o $env:Temp\ADFSSQLScripts\UpdateServiceSettings-output.log" -ForegroundColor "yellow" 
+            Write-Host "`n`n $NotifyCount. Either the currently logged on user does not have appropriate permissions on the SQL Server," -ForegroundColor "yellow" 
+            Write-Host "    or SQLCmd.exe was not found on this system. You must provide your SQL DBA with the SetPermissions.sql" -ForegroundColor "yellow" 
+            Write-Host "    and UpdateServiceSettings.sql fileslocated in $env:Temp\ADFSSQLScripts." -ForegroundColor "yellow" 
+            Write-Host "    The DBA should execute these scripts on the SQL Server where the AD FS" -ForegroundColor "yellow" 
+            Write-Host "    Configuration and Artifact databases reside." -ForegroundColor "yellow" 
+            Write-Host "`n    Syntax:" -ForegroundColor "yellow"  
+            Write-Host "    sqlcmd.exe -S $SQLHost -i $env:Temp\ADFSSQLScripts\SetPermissions.sql" -ForegroundColor "yellow" 
+            Write-Host "    -o $env:Temp\ADFSSQLScripts\SetPermissions-output.log" -ForegroundColor "yellow" 
+            Write-Host "`n    sqlcmd.exe -S $SQLHost -i $env:Temp\ADFSSQLScripts\UpdateServiceSettings.sql" -ForegroundColor "yellow" 
+            Write-Host "    -o $env:Temp\ADFSSQLScripts\UpdateServiceSettings-output.log" -ForegroundColor "yellow" 
      
             "`n`n $NotifyCount. Either the currently logged on user does not have appropriate permissions on the SQL Server," | Out-File $LogPath -Append 
             "    or SQLCmd.exe was not found on this system. You must provide your SQL DBA with the SetPermissions.sql" | Out-File $LogPath -Append 
@@ -1470,14 +1470,14 @@ function Update-AdfsServiceAccount
         } 
         Else 
         { 
-            Write-Output "`n`n $NotifyCount. SQLCmd.exe was not found on this system. The SQL scripts must be executed" -ForegroundColor "yellow" 
-            Write-Output "    manually using either SQL Management Studio or SQLCmd.exe. The scripts currently reside" -ForegroundColor "yellow" 
-            Write-Output "    in $env:Temp\ADFSSQLScripts." -ForegroundColor "yellow" 
-            Write-Output "`n    Syntax:" -ForegroundColor "yellow"  
-            Write-Output "    sqlcmd.exe -S $SQLHost -i $env:Temp\ADFSSQLScripts\SetPermissions.sql" -ForegroundColor "yellow" 
-            Write-Output "    -o $env:Temp\ADFSSQLScripts\SetPermissions-output.log" -ForegroundColor "yellow" 
-            Write-Output "`n    sqlcmd.exe -S $SQLHost -i $env:Temp\ADFSSQLScripts\UpdateServiceSettings.sql" -ForegroundColor "yellow" 
-            Write-Output "    -o $env:Temp\ADFSSQLScripts\UpdateServiceSettings-output.log" -ForegroundColor "yellow" 
+            Write-Host "`n`n $NotifyCount. SQLCmd.exe was not found on this system. The SQL scripts must be executed" -ForegroundColor "yellow" 
+            Write-Host "    manually using either SQL Management Studio or SQLCmd.exe. The scripts currently reside" -ForegroundColor "yellow" 
+            Write-Host "    in $env:Temp\ADFSSQLScripts." -ForegroundColor "yellow" 
+            Write-Host "`n    Syntax:" -ForegroundColor "yellow"  
+            Write-Host "    sqlcmd.exe -S $SQLHost -i $env:Temp\ADFSSQLScripts\SetPermissions.sql" -ForegroundColor "yellow" 
+            Write-Host "    -o $env:Temp\ADFSSQLScripts\SetPermissions-output.log" -ForegroundColor "yellow" 
+            Write-Host "`n    sqlcmd.exe -S $SQLHost -i $env:Temp\ADFSSQLScripts\UpdateServiceSettings.sql" -ForegroundColor "yellow" 
+            Write-Host "    -o $env:Temp\ADFSSQLScripts\UpdateServiceSettings-output.log" -ForegroundColor "yellow" 
      
             "`n`n $NotifyCount. Either the currently logged on user does not have appropriate permissions on the SQL Server," | Out-File $LogPath -Append 
             "    or SQLCmd.exe was not found on this system. You must provide your SQL DBA with the SetPermissions.sql" | Out-File $LogPath -Append 
@@ -1495,8 +1495,8 @@ function Update-AdfsServiceAccount
    
     If ($FailedSpn) 
     { 
-        Write-Output "`n`n $NotifyCount. $NewName must have the SPN HOST/$FederationServiceName registered.`n    SPN registration failed during execution and must be handled manually.`n" -ForegroundColor "yellow" 
-        Write-Output "    Syntax:`n    setspn -S HOST/$FederationServiceName $NewName" -ForegroundColor "yellow" 
+        Write-Host "`n`n $NotifyCount. $NewName must have the SPN HOST/$FederationServiceName registered.`n    SPN registration failed during execution and must be handled manually.`n" -ForegroundColor "yellow" 
+        Write-Host "    Syntax:`n    setspn -S HOST/$FederationServiceName $NewName" -ForegroundColor "yellow" 
      
         "`n`n $NotifyCount. $NewName must have the SPN HOST/$FederationServiceName registered.`n    SPN registration failed during execution and must be handled manually.`n" | Out-File $LogPath -Append 
         "    Syntax:`n    setspn -S HOST/$FederationServiceName $NewName" | Out-File $LogPath -Append 
@@ -1505,7 +1505,7 @@ function Update-AdfsServiceAccount
    
     If ($FailedServiceIdentity) 
     { 
-        Write-Output "`n`n $NotifyCount. Failed setting the AD FS service identity to $NewName during execution.`n    This must be set manually in the Services console." -ForegroundColor "yellow" 
+        Write-Host "`n`n $NotifyCount. Failed setting the AD FS service identity to $NewName during execution.`n    This must be set manually in the Services console." -ForegroundColor "yellow" 
      
         "`n`n $NotifyCount. Failed setting the AD FS service identity to $NewName during execution.`n    This must be set manually in the Services console." | Out-File $LogPath -Append 
         $NotifyCount += 1 
@@ -1513,14 +1513,14 @@ function Update-AdfsServiceAccount
    
     If ($Mode -eq 1) 
     { 
-        Write-Output "`n`n $NotifyCount. Operating Mode $Mode was selected for this server, which means this sample must be executed`n    in Operating Mode 2 on the final server before the AD FS service is started on this server.`n    Once the sample has been run on the final server in Operating Mode 2, return to this server`n    to start the AD FS service." -ForegroundColor "yellow" 
+        Write-Host "`n`n $NotifyCount. Operating Mode $Mode was selected for this server, which means this sample must be executed`n    in Operating Mode 2 on the final server before the AD FS service is started on this server.`n    Once the sample has been run on the final server in Operating Mode 2, return to this server`n    to start the AD FS service." -ForegroundColor "yellow" 
         "`n`n $NotifyCount. Operating Mode $Mode was selected for this server, which means this sample must be executed`n    in Operating Mode 2 on the final server before the AD FS service is started on this server.`n    Once the sample has been run on the final server in Operating Mode 2, return to this server`n    to start the AD FS service." | Out-File $LogPath -Append 
         $NotifyCount += 1 
     } 
    
     If ($SkipServiceStart) 
     { 
-        Write-Output "`n`n $NotifyCount. Service start was skipped during execution due to post-sample needs. The service must be manually started.`n`n    Syntax:`n    net start adfssrv" -ForegroundColor "yellow" 
+        Write-Host "`n`n $NotifyCount. Service start was skipped during execution due to post-sample needs. The service must be manually started.`n`n    Syntax:`n    net start adfssrv" -ForegroundColor "yellow" 
      
         "`n`n $NotifyCount. Service start was skipped during execution due to post-sample needs.`n    The service must be manually started." | Out-File $LogPath -Append 
         $NotifyCount += 1 
@@ -1528,8 +1528,8 @@ function Update-AdfsServiceAccount
    
     If ($FailedServiceStart) 
     { 
-        Write-Output "`n`n $NotifyCount. Failed service start during execution.`n    The service must be manually started." -ForegroundColor "yellow" 
-        Write-Output "    Syntax: net start adfssrv" -ForegroundColor "yellow" 
+        Write-Host "`n`n $NotifyCount. Failed service start during execution.`n    The service must be manually started." -ForegroundColor "yellow" 
+        Write-Host "    Syntax: net start adfssrv" -ForegroundColor "yellow" 
      
         "`n`n $NotifyCount. Failed service start during execution.`n    The service must be manually started." | Out-File $LogPath -Append 
         "    Syntax: net start adfssrv" | Out-File $LogPath -Append 
@@ -1538,13 +1538,13 @@ function Update-AdfsServiceAccount
    
     If ($NotifyCount -eq 1) 
     { 
-        Write-Output "`n No post-sample items" -ForegroundColor "green" 
+        Write-Host "`n No post-sample items" -ForegroundColor "green" 
         "No post-sample items" | Out-File $LogPath -Append 
     } 
 
-    Write-Output "`n`n It is recommended the old service account $OldName be deletd once the service account has been changed on all servers.`n" -ForegroundColor "yellow"
+    Write-Host "`n`n It is recommended the old service account $OldName be deletd once the service account has been changed on all servers.`n" -ForegroundColor "yellow"
  
-    Write-Output "`n`n Sample completed successfully. See ADFS_Change_Service_Account.log in the current directory for detail`n" -ForegroundColor "green" 
+    Write-Host "`n`n Sample completed successfully. See ADFS_Change_Service_Account.log in the current directory for detail`n" -ForegroundColor "green" 
     "[END TIME] $(Get-Date)" | Out-File $LogPath -Append 
  
     $ErrorActionPreference = "continue" 

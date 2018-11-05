@@ -161,7 +161,7 @@ Function TryTestAdfsSTSHealthOnFarmNodes()
         if ($osVersion -eq [OSVersion]::WS2016 -and $isPrimary)
         {
             $adfsServers = @();
-            Write-Output "Detected OS as Windows Server 2016, attempting to run health checks across all of your AD FS servers in your farm.";
+            Write-Host "Detected OS as Windows Server 2016, attempting to run health checks across all of your AD FS servers in your farm.";
 
             $nodes = (Get-AdfsFarmInformation).FarmNodes;
             foreach ($server in $nodes)
@@ -187,7 +187,7 @@ Function TryTestAdfsSTSHealthOnFarmNodes()
     $reachableServer = @();
     $unreachableServer = @();
 
-    Write-Output "Running the health checks on the local machine.";
+    Write-Host "Running the health checks on the local machine.";
     $result = TestAdfsSTSHealth -verifyO365 $verifyO365 -verifyTrustCerts $verifyTrustCerts -adfsServers $adfsServers;
     foreach($test in $result)
     {
@@ -198,7 +198,7 @@ Function TryTestAdfsSTSHealthOnFarmNodes()
 
     if (($adfsServers -ne $null -and $adfsServers.Count -ne 0) -and (-not ($local)))
     {
-        Write-Output "Running health checks on other servers in farm."
+        Write-Host "Running health checks on other servers in farm."
 
         $Private = @(Get-ChildItem -Path $PSScriptRoot\*.ps1 -ErrorAction SilentlyContinue);
         $Public = @(Get-ChildItem -Path $PSScriptRoot\..\Public\*.ps1 -ErrorAction SilentlyContinue);
@@ -209,7 +209,7 @@ Function TryTestAdfsSTSHealthOnFarmNodes()
 
         foreach ($server in $adfsServers)
         {
-            Write-Output "Running health checks on $server.";
+            Write-Host "Running health checks on $server.";
             $session = New-PSSession -ComputerName $server -ErrorAction SilentlyContinue;
             if ($session -eq $null)
             {
@@ -244,7 +244,7 @@ Function TryTestAdfsSTSHealthOnFarmNodes()
         }
     }
 
-    Write-Output "Successfully completed all health checks.";
+    Write-Host "Successfully completed all health checks.";
     return New-Object TestResultsContainer -ArgumentList($results, $reachableServer, $unreachableServer);
 }
 
@@ -284,7 +284,7 @@ Function TestAdfsProxyHealth()
         $test.ComputerName = $fqdn;
     }
 
-    Write-Output "Successfully completed all health checks.";
+    Write-Host "Successfully completed all health checks.";
     $reachableServer = @($fqdn);
     $unreachableServer = @();
     return New-Object TestResultsContainer -ArgumentList($results, $reachableServer, $unreachableServer);

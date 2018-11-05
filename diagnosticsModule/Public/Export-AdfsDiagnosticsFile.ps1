@@ -79,5 +79,5 @@ Function Export-AdfsDiagnosticsFile()
     Out-File -FilePath $filePath -InputObject $JSONDiagnosticData -Encoding ascii
 
     # print message for the user to find the file
-    Write-Output "Please upload the diagnostic file located at $filePath to https://adfshelp.microsoft.com/DiagnosticsAnalyzer/Analyze."
+    Write-Host "Please upload the diagnostic file located at $filePath to https://adfshelp.microsoft.com/DiagnosticsAnalyzer/Analyze."
 }

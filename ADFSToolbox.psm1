@@ -31,19 +31,19 @@ try
     $response = Invoke-WebRequest -URI $url | ConvertFrom-Json
     if ($response.name -ne $ModuleVersion)
     {
-       Write-Output "There is a newer version available. Run 'Update-Module -Name ADFSToolbox' to update to the latest version" -BackgroundColor DarkYellow -ForegroundColor Black
-       Write-Output "Alternatively, you can download it manually from https://github.com/Microsoft/adfsToolbox/releases/latest" -BackgroundColor DarkYellow -ForegroundColor Black
+       Write-Host "There is a newer version available. Run 'Update-Module -Name ADFSToolbox' to update to the latest version" -BackgroundColor DarkYellow -ForegroundColor Black
+       Write-Host "Alternatively, you can download it manually from https://github.com/Microsoft/adfsToolbox/releases/latest" -BackgroundColor DarkYellow -ForegroundColor Black
     }
     else
     {
-       Write-Output "You have the latest version installed!" -BackgroundColor DarkYellow -ForegroundColor Black
+       Write-Host "You have the latest version installed!" -BackgroundColor DarkYellow -ForegroundColor Black
     }
 }
 catch
 {
     # Github limits the number of unauthenticated API requests. To avoid this throwing an error we supress it here.
-    Write-Output "Importing ADFSToolbox version $ModuleVersion" -BackgroundColor Yellow -ForegroundColor Black
-    Write-Output "Unable to reach GitHub, please manually verify that you have the latest version by going to https://github.com/Microsoft/adfsToolbox/releases/latest" -BackgroundColor Yellow -ForegroundColor Black
+    Write-Host "Importing ADFSToolbox version $ModuleVersion" -BackgroundColor Yellow -ForegroundColor Black
+    Write-Host "Unable to reach GitHub, please manually verify that you have the latest version by going to https://github.com/Microsoft/adfsToolbox/releases/latest" -BackgroundColor Yellow -ForegroundColor Black
 }
 
 [Net.ServicePointManager]::SecurityProtocol = $oldProtocol

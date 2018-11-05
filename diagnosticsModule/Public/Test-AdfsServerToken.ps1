@@ -127,7 +127,7 @@ Function Test-AdfsServerToken
         {
             [Net.ServicePointManager]::SecurityProtocol = $_
             $webresp = Invoke-WebRequest $endpoint -Method Post -Body $rst -ContentType "application/soap+xml" -UseDefaultCredentials -UseBasicParsing
-            Write-Output "Successfully performed a synthetic transaction to get a token using TLS version: $_"
+            Write-Host "Successfully performed a synthetic transaction to get a token using TLS version: $_"
         }
         catch [Net.WebException]
         {

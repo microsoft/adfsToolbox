@@ -81,12 +81,12 @@ Function Test-AdfsServerHealth()
     {
         $adfsRoleSTS
         {
-            Write-Output "Performing applicable health checks on your AD FS server."
+            Write-Host "Performing applicable health checks on your AD FS server."
             return TryTestAdfsSTSHealthOnFarmNodes -verifyO365 $verifyO365 -verifyTrustCerts $verifyTrustCerts -adfsServers $adfsServers -local:$local;
         }
         $adfsRoleProxy
         {
-            Write-Output "Performing applicable health checks on your WAP server."
+            Write-Host "Performing applicable health checks on your WAP server."
             return TestAdfsProxyHealth -sslThumbprint $sslThumbprint;
         }
         default
