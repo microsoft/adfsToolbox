@@ -187,6 +187,8 @@ Function TryTestAdfsSTSHealthOnFarmNodes()
     $reachableServer = @();
     $unreachableServer = @();
 
+    $reachableServer += $fqdn;
+
     Write-Host "Running the health checks on the local machine.";
     $result = TestAdfsSTSHealth -verifyO365 $verifyO365 -verifyTrustCerts $verifyTrustCerts -adfsServers $adfsServers;
     foreach($test in $result)
