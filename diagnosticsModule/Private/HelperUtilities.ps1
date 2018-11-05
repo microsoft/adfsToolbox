@@ -635,7 +635,6 @@ function GenerateDiagnosticData()
 
     # create aggregate object to store diagnostic output from each cmdlet run
     $diagnosticData = New-Object -TypeName PSObject
-    $testAdfsServerHealth = New-Object -TypeName PSObject 
 
     foreach($module in $modules.keys)
     {
@@ -654,10 +653,7 @@ function GenerateDiagnosticData()
             try
             {
                 $res = (Invoke-Expression -Command $cmd)
-                $testAdfsServerHealth | Add-Member -MemberType NoteProperty -Name "AllTests" -Value $res.AllTests
-                $testAdfsServerHealth | Add-Member -MemberType NoteProperty -Name "ReachableServers" -Value $res.ReachableServers
-                $testAdfsServerHealth | Add-Member -MemberType NoteProperty -Name "UnreachableServers" -Value $res.UnreachableServers
-                Add-Member -InputObject $moduleData -MemberType NoteProperty -Name $cmdlet -Value $testAdfsServerHealth
+                Add-Member -InputObject $moduleData -MemberType NoteProperty -Name $cmdlet -Value $res
                 Add-Member -InputObject $diagnosticData -MemberType NoteProperty -Name $module -Value $moduleData
                 Out-Verbose "Successfully ran cmdlet $cmdlet"
             }
