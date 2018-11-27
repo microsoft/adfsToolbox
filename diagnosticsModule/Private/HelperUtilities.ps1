@@ -637,6 +637,10 @@ function GenerateDiagnosticData()
     $diagnosticData = New-Object -TypeName PSObject
     $testAdfsServerHealth = New-Object -TypeName PSObject 
 
+    # Add ADFS configuration information to the diagnostics json
+    $adfsConfiguration = New-Object -TypeName PSObject
+    $adfsConfiguration =  AdfsConfiguration
+
     foreach($module in $modules.keys)
     {
         $moduleData = New-Object -TypeName PSObject
@@ -668,6 +672,9 @@ function GenerateDiagnosticData()
             }
         }
     }
+
+    # add the AD FS Configuration information to the output
+    Add-Member -InputObject $moduleData -MemberType NoteProperty -Name "Adfs-Configuration" -Value $adfsConfiguration
 
     # add the cmdlet version to the output
     Add-Member -InputObject $diagnosticData -MemberType NoteProperty -Name "Version" -Value $outputVersion
