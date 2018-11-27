@@ -100,10 +100,11 @@ Function Test-AdfsServerToken
     }
 
     $oldProtocol = [Net.ServicePointManager]::SecurityProtocol
-    $protocolsToTest = @();
+    $protocolsToTest = @()
+
     if (!($TestTls10) -and !($TestTls11) -and !($TestTls12))
     {
-        $protocolsToTest = @($Tls10, $Tls11, $Tls12)
+        $protocolsToTest = @($Tls10)
     }
 
     if ($TestTls10)
@@ -121,18 +122,9 @@ Function Test-AdfsServerToken
         $protocolsToTest += $Tls12
     }
 
-
     $protocolsToTest | ForEach-Object {
-        try
-        {
-            [Net.ServicePointManager]::SecurityProtocol = $_
-            $webresp = Invoke-WebRequest $endpoint -Method Post -Body $rst -ContentType "application/soap+xml" -UseDefaultCredentials -UseBasicParsing
-            Write-Host "Successfully performed a synthetic transaction to get a token using TLS version: $_"
-        }
-        catch [Net.WebException]
-        {
-            Out-Warning "Unable to perform a synthetic transaction to get a token using TLS version: $_"
-        }
+        [Net.ServicePointManager]::SecurityProtocol = $_
+        $webresp = Invoke-WebRequest $endpoint -Method Post -Body $rst -ContentType "application/soap+xml" -UseDefaultCredentials -UseBasicParsing
     }
 
     [Net.ServicePointManager]::SecurityProtocol = $oldProtocol
