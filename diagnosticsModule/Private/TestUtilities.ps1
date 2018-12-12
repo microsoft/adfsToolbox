@@ -133,8 +133,7 @@ Function TestAdfsSTSHealth()
     {
         $functionsToRun = $functionsToRun + @( `
                 "TestOffice365Endpoints", `
-                "TestADFSO365RelyingParty", `
-                "TestNtlmOnlySupportedClientAtProxyEnabled");
+                "TestADFSO365RelyingParty");
     }
 
     return Invoke-TestFunctions -role $adfsRoleSTS -functionsToRun $functionsToRun -functionArguments $functionArguments;
@@ -191,7 +190,7 @@ Function TryTestAdfsSTSHealthOnFarmNodes()
 
     Write-Host "Running the health checks on the local machine.";
     $result = TestAdfsSTSHealth -verifyO365 $verifyO365 -verifyTrustCerts $verifyTrustCerts -adfsServers $adfsServers;
-    foreach($test in $result)
+    foreach ($test in $result)
     {
         $test.ComputerName = $fqdn;
     }
@@ -230,7 +229,7 @@ Function TryTestAdfsSTSHealthOnFarmNodes()
 
             $serializedResult = @();
 
-            foreach($obj in $deserializedResult)
+            foreach ($obj in $deserializedResult)
             {
                 $newObj = CreateTestResultFromPSObject $obj;
                 $newObj.ComputerName = $server;
@@ -281,7 +280,7 @@ Function TestAdfsProxyHealth()
     }
 
     $results = Invoke-TestFunctions -role "Proxy" -functionsToRun $functionsToRun -functionArguments $functionArguments;
-    foreach($test in $results)
+    foreach ($test in $results)
     {
         $test.ComputerName = $fqdn;
     }
