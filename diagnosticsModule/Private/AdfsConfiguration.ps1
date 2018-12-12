@@ -3,6 +3,24 @@ function AdfsConfiguration
     $configurationOutput = New-Object PSObject;
     $ErrorActionPreference = "SilentlyContinue"
 
+    # Get AD FS role
+    $role = Get-AdfsRole;
+    if($role -eq $adfsRoleSTS){
+        # If primary ADFS server
+        if(IsAdfsSyncPrimaryRole){
+            $role = 1; 
+        }
+        # Is secondary ADFS server
+        else{
+            $role = 2;
+        }
+    }
+    # Is WAP server
+    elseif($role -eq $adfsRoleProxy){
+        $role = 3;
+    }
+    $configurationOutput | Add-Member NoteProperty -name "Role" -value $role -Force;
+
     # Get Major value of the operating system 
     $MajorOsVersion = ([environment]::OSVersion.Version).Major;
     $configurationOutput | Add-Member NoteProperty -name "MajorOsVersion" -value $MajorOsVersion -Force;
@@ -49,7 +67,7 @@ function AdfsConfiguration
 
     # Get Service account SPN
     if($null -ne $serviceAccount){
-        $serviceAccountSPN = setspn -L $serviceAccount;
+        [array]$serviceAccountSPN = setspn -L $serviceAccount;
     }
     $configurationOutput | Add-Member NoteProperty -name "ServiceAccountSpn" -value $serviceAccountSPN -Force;
 
