@@ -67,7 +67,7 @@ function AdfsConfiguration
 
     # Get Service account SPN
     if($null -ne $serviceAccount){
-        $serviceAccountSPN = setspn -L $serviceAccount;
+        [array]$serviceAccountSPN = setspn -L $serviceAccount;
     }
     $configurationOutput | Add-Member NoteProperty -name "ServiceAccountSpn" -value $serviceAccountSPN -Force;
 
