@@ -689,14 +689,9 @@ function GenerateJSONDiagnosticData()
         [switch]    $local
     )
 
-    # configs
-    # maximum global JSON depth in the diagnostic file
-    $jsonDepth = 8
-    # end configs
-
     Out-Verbose "Generating diagnostic data"
     $diagnosticData = GenerateDiagnosticData -includeTrusts:$includeTrusts -sslThumbprint $sslThumbprint -adfsServers $adfsServers -local:$local;
     Out-Verbose "Successfully generated diagnostic data"
 
-    return ConvertTo-JSON -InputObject $diagnosticData -Depth $jsonDepth -Compress
+    return ConvertTo-JSON -InputObject $diagnosticData -Depth $maxJsonDepth -Compress
 }
