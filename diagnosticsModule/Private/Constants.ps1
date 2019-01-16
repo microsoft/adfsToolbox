@@ -17,6 +17,8 @@ $TlsServerPath = "{0}\Server";
 $TlsClientPath = "{0}\Client";
 $timeDifferenceMaximum = 300; #seconds
 
+$maxJsonDepth = 8
+
 $Tls10 = [System.Net.SecurityProtocolType]::Tls;
 $Tls11 = [System.Net.SecurityProtocolType]::Tls11;
 $Tls12 = [System.Net.SecurityProtocolType]::Tls12;

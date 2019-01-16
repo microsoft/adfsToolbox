@@ -6,22 +6,22 @@ Merges one or more diagnostics output files into a single merged file named Merg
 The Join-DiagnosticsFiles cmdlet is used to merge one or more diagnostics output files into a single file.  You can then upload this merged file to AD FS Help and view the farm health and configuration holistically.
 
 .PARAMETER FilePath
-The location of the output files that will be merged
+The location of the output files that will be merged.  The default value is the current folder.
+
+.EXAMPLE
+Join-DiagnosticsFiles
+Merge the diagnostics files located in the current folder
 
 .EXAMPLE
 Join-DiagnosticsFiles c:\output
 Merge the diagnostics files located in the c:\output folder
-
-.EXAMPLE
-Join-DiagnosticsFiles .
-Merge the diagnostics files located in the current folder
 #>
 Function Join-DiagnosticsFiles
 {
     [CmdletBinding()]
     Param
     (
-        [string] $FilePath = $null
+        [string] $FilePath = "."
     )
 
     # Merged data file name
@@ -61,23 +61,16 @@ Function Join-DiagnosticsFiles
 
             Write-Host "  - Merging file: $fileName"  
             
-            $allTests = @(Get-Content $fileName -raw) | ConvertFrom-Json | Select-Object -ExpandProperty ADFSToolbox | Select-Object -ExpandProperty Test-AdfsServerHealth | Select AllTests
-            $passedTests = @(Get-Content $fileName -raw) | ConvertFrom-Json | Select-Object -ExpandProperty ADFSToolbox | Select-Object -ExpandProperty Test-AdfsServerHealth | Select PassedTests
-            $warningTests = @(Get-Content $fileName -raw) | ConvertFrom-Json | Select-Object -ExpandProperty ADFSToolbox | Select-Object -ExpandProperty Test-AdfsServerHealth | Select WarningTests
-            $failedTests = @(Get-Content $fileName -raw) | ConvertFrom-Json | Select-Object -ExpandProperty ADFSToolbox | Select-Object -ExpandProperty Test-AdfsServerHealth | Select FailedTests
-            $errorTests = @(Get-Content $fileName -raw) | ConvertFrom-Json | Select-Object -ExpandProperty ADFSToolbox | Select-Object -ExpandProperty Test-AdfsServerHealth | Select ErrorTests
-            $notRunTests = @(Get-Content $fileName -raw) | ConvertFrom-Json | Select-Object -ExpandProperty ADFSToolbox | Select-Object -ExpandProperty Test-AdfsServerHealth | Select NotRunTests
-            $reachableServers = @(Get-Content $fileName -raw) | ConvertFrom-Json | Select-Object -ExpandProperty ADFSToolbox | Select-Object -ExpandProperty Test-AdfsServerHealth | Select ReachableServers
-            $unreachableServers = @(Get-Content $fileName -raw) | ConvertFrom-Json | Select-Object -ExpandProperty ADFSToolbox | Select-Object -ExpandProperty Test-AdfsServerHealth | Select UnreachableServers
+            $adfsServerHealthData = @(Get-Content $fileName -raw) | ConvertFrom-Json | Select-Object -ExpandProperty ADFSToolbox | Select-Object -ExpandProperty Test-AdfsServerHealth
 
-            $mergedTestData["AllTests"] += $allTests.AllTests
-            $mergedTestData["PassedTests"] += $passedTests.PassedTests
-            $mergedTestData["WarningTests"] += $warningTests.WarningTests
-            $mergedTestData["FailedTests"] += $failedTests.FailedTests
-            $mergedTestData["ErrorTests"] += $errorTests.ErrorTests
-            $mergedTestData["NotRunTests"] += $notRunTests.NotRunTests
-            $mergedTestData["ReachableServers"] += $reachableServers.ReachableServers
-            $mergedTestData["UnreachableServers"] += $unreachableServers.UnreachableServers
+            $mergedTestData["AllTests"] += $adfsServerHealthData.AllTests
+            $mergedTestData["PassedTests"] += $adfsServerHealthData.PassedTests
+            $mergedTestData["WarningTests"] += $adfsServerHealthData.WarningTests
+            $mergedTestData["FailedTests"] += $adfsServerHealthData.FailedTests
+            $mergedTestData["ErrorTests"] += $adfsServerHealthData.ErrorTests
+            $mergedTestData["NotRunTests"] += $adfsServerHealthData.NotRunTests
+            $mergedTestData["ReachableServers"] += $adfsServerHealthData.ReachableServers
+            $mergedTestData["UnreachableServers"] += $adfsServerHealthData.UnreachableServers
 
             $configuration = @(Get-Content $fileName -raw) | ConvertFrom-Json | Select-Object -ExpandProperty ADFSToolbox | Select-Object -ExpandProperty Adfs-Configuration
 
@@ -90,11 +83,9 @@ Function Join-DiagnosticsFiles
         }
         
     $outputPath = $FilePath + $OutputFileName
-    Write-Host
     Write-Host "Creating merged diagnostics file: $outputPath"
 
     $resultantData = @{}
-    $resultantData["Test-AdfsServerHealth"] = @()
     $resultantData["Test-AdfsServerHealth"] = $mergedTestData
     $resultantData["Adfs-Configuration"] = $adfsConfiguration
 
@@ -102,5 +93,5 @@ Function Join-DiagnosticsFiles
     $mergedOutput["ADFSToolbox"] = $resultantData
     $mergedOutput["Version"] = $version.Version
 
-    $mergedOutput | ConvertTo-JSON -depth 100 -Compress | Out-File $OutputPath -Encoding default
+    $mergedOutput | ConvertTo-JSON -depth $maxJsonDepth -Compress | Out-File $OutputPath -Encoding default
 }
