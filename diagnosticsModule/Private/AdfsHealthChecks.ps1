@@ -875,7 +875,7 @@ Function TestAdfsRequestToken($retryThreshold = 5, $sleepSeconds = 3)
         {
             $tokenString = ""
             #attempt to load first the synthetic transactions library, and fallback to the simpler version
-            ipmo .\Microsoft.Identity.Health.SyntheticTransactions.dll -ErrorAction SilentlyContinue -ErrorVariable synthTxErrVar
+            ipmo .\Microsoft.Identity.Health.Adfs.SyntheticTransactions.dll -ErrorAction SilentlyContinue -ErrorVariable synthTxErrVar
             if ($synthTxErrVar -ne $null)
             {
                 [Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
@@ -898,7 +898,7 @@ Function TestAdfsRequestToken($retryThreshold = 5, $sleepSeconds = 3)
                     $tokenString = $token.ToString()
                 }
             }
-            $testResult.Detail = "Token Received: " + $tokenString + "`nTotal Attempts: $i"
+            $testResult.Detail = "Received Token Length: " + $tokenString.Length + "`nTotal Attempts: $i"
             return $testResult;
         }
         catch [Exception]
