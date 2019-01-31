@@ -509,6 +509,12 @@ function Update-AdfsServiceAccountRule
         $User = $Account[1]
     }
     $Lookup = Get-ADUser -Filter {Name -eq $User} 
+
+    if($Lookup -eq $null) #Check if account is GMSA
+    {
+        $Lookup = Get-ADServiceAccount {Name -eq $User}
+    }
+
     if($Lookup -eq $null)
     {
         throw "The specified account $User does not exist"
