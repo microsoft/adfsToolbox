@@ -279,8 +279,8 @@ Function TestAdfsProxyHealth()
             $functionsToRun += "TestProxySslBindings"
         }
     }
-    else 
-    {       
+    else
+    {   
         $functionsToRun += "TestProxySslBindings -AdfsSslThumbprint `$functionArguments.AdfsSslThumbprint";
     }
 
