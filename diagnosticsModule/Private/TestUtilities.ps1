@@ -270,11 +270,7 @@ Function TestAdfsProxyHealth()
             "TestNonSelfSignedCertificatesInRootStore", `
             "TestSelfSignedCertificatesInIntermediateCaStore");
 
-    if ([string]::IsNullOrWhiteSpace($sslThumbprint))
-    {
-        $functionsToRun += "TestProxySslBindings";
-    }
-    else
+    if (-not [string]::IsNullOrWhiteSpace($sslThumbprint))
     {
         $functionsToRun += "TestProxySslBindings -AdfsSslThumbprint `$functionArguments.AdfsSslThumbprint";
     }
