@@ -272,7 +272,12 @@ Function TestAdfsProxyHealth()
 
     if ([string]::IsNullOrWhiteSpace($sslThumbprint))
     {
-        $functionsToRun += "TestProxySslBindings";
+        # Attempt to load first the synthetic transactions library to test if Connect Health is the executer of the script
+        ipmo .\Microsoft.Identity.Health.Adfs.SyntheticTransactions.dll -ErrorAction SilentlyContinue -ErrorVariable synthTxErrVar
+        if ($synthTxErrVar -ne $null)
+        {
+            $functionsToRun += "TestProxySslBindings"
+        }
     }
     else
     {
