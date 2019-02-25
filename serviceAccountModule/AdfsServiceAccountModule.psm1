@@ -508,11 +508,16 @@ function Update-AdfsServiceAccountRule
         $Account = $ServiceAccount.Split('\') #Input given in the format domain\user 
         $User = $Account[1]
     }
-    $Lookup = Get-ADUser -Filter {Name -eq $User} 
 
-    if($Lookup -eq $null) #Check if account is GMSA
+    $IsGmsaAccount = $User.EndsWith("$") 
+
+    if($IsGmsaAccount -eq $true ) 
     {
-        $Lookup = Get-ADServiceAccount {Name -eq $User}
+        $Lookup = Get-ADServiceAccount -Filter {SamAccountName -eq $User}
+    }
+    else
+    {
+        $Lookup = Get-ADUser -Filter {Name -eq $User} 
     }
 
     if($Lookup -eq $null)
