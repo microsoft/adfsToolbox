@@ -10,25 +10,33 @@ Function TestIsWidRunning()
         $adfsConfigurationDb = (Get-WmiObject -namespace root/ADFS -class SecurityTokenService).Properties["ConfigurationDatabaseConnectionString"].Value;
         If ($adfsConfigurationDb.Contains("microsoft##wid") -or $adfsConfigurationDb.Contains("microsoft##ssee"))
         {
-            $widService = (Get-WmiObject win32_service | Where-Object {$_.DisplayName.StartsWith("Windows Internal Database")})
-            $widServiceState = $widService.State
-            if ($widServiceState.Count -ne $null -and $widServiceState.Count -gt 1)
+            $service=Get-Service -name WIDWriter;
+            if($service -ne $null)
             {
-                $widServiceState = $widServiceState[0];
+                $widServiceState=$service.Status;            
+                If ($widServiceState -ne "Running")
+                {
+                    $adfsConfigurationDbTestResult.Result = [ResultType]::Fail;
+                    $adfsConfigurationDbTestResult.Detail = "Current State of WID Service is: $widServiceState";
+                }
+                $widService = (Get-WmiObject win32_service | Where-Object {$_.DisplayName.StartsWith($service.DisplayName)});
+                $adfsConfigurationDbTestResult.Output = @{$serviceStateKey = $widServiceState; $serviceStartModeKey=$widService.StartMode}
+                return $adfsConfigurationDbTestResult;
             }
-            If ($widServiceState -ne "Running")
+            else
             {
-                $adfsConfigurationDbTestResult.Result = [ResultType]::Fail;
-                $adfsConfigurationDbTestResult.Detail = "Current State of WID Service is: $widServiceState";
+                throw "Get-Service with name WIDWriter does not exist.";
             }
-            $adfsConfigurationDbTestResult.Output = @{$serviceStateKey = $widServiceState; $serviceStartModeKey = $widService.StartMode}
-            return $adfsConfigurationDbTestResult;
-        }
+        }        
     }
-    catch [Exception]
+    catch [Exception] 
     {
-        return Create-ErrorExceptionTestResult $testName $_.Exception
-    }
+        $testResult= New-Object TestResult -ArgumentList($testName);
+        $testResult.Result = [ResultType]::NotRun;
+        $testResult.Detail = $_.Exception.Message;
+        $testResult.ExceptionMessage = $_.Exception.Message
+        return $testResult;
+    } 
 }
 
 # Ping Federation metadata page on localhost
@@ -45,6 +53,7 @@ Function TestPingFederationMetadata()
         $fedmetadataUrl = "https://" + $sslBinding.HostNamePort + "/federationmetadata/2007-06/federationmetadata.xml";
         $webClient = New-Object net.WebClient;
         [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls11 -bor [System.Net.SecurityProtocolType]::Tls12
         try
         {
             $data = $webClient.DownloadData($fedmetadataUrl);
@@ -89,7 +98,7 @@ Function TestSslBindings()
 
     try
     {
-        if ($adfsVersion -eq $adfs3)
+        if ($adfsVersion -eq $adfs3 -or $adfsVersion -eq $adfs4)
         {
             $adfsSslBindings = Get-AdfsSslCertificate;
 
@@ -142,14 +151,14 @@ Function TestSslBindings()
 }
 
 function Test-AdfsCertificates ()
-{
+{    
     $primaryCertificateTypes = @("Service-Communications", "Token-Decrypting", "Token-Signing", "SSL")
     $secondaryCerticateTypes = $primaryCertificateTypes | ? {$_ -ne "Service-Communications" -and $_ -ne "SSL"}
-
-    $primaryValues = @{$true = $primaryCertificateTypes; $false = $secondaryCerticateTypes}
-
+    
+    $primaryValues = @{$true=$primaryCertificateTypes; $false = $secondaryCerticateTypes}
+    
     $results = @()
-
+    
     $notRunTests = $false
     $notRunReason = ""
 
@@ -158,19 +167,19 @@ function Test-AdfsCertificates ()
         $notRunTests = $true
         $notRunReason = "AD FS Service is not running"
     }
-
+    
     try
-    {
+    {    
         if (Test-RunningOnAdfsSecondaryServer)
         {
             $notRunTests = $true
             $notRunReason = "This check does not run on AD FS Secondary Server"
-        }
+        }        
     }
     catch
     {
         $notRunTests = $true
-        $notRunReason = "Cannot verify sync status of AD FS Server " + $_.Exception.ToString()
+        $notRunReason = "Cannot verify sync status of AD FS Server " + $_.Exception.ToString()        
     }
 
     if ($notRunTests)
@@ -184,50 +193,66 @@ function Test-AdfsCertificates ()
         }
         return $results
     }
-
+    
+    
     $certsToCheck = Get-AdfsCertificatesToTest
     foreach ($isPrimary in $primaryValues.Keys)
     {
         foreach ($certType in $primaryValues.Item($isPrimary))
         {
             $adfsCerts = @($certsToCheck | where {$_.CertificateType -eq $certType -and $_.IsPrimary -eq $isPrimary})
-
+            
             foreach ($adfsCert in $adfsCerts)
             {
-                if ($null -eq $adfsCert)
+                try
                 {
-                    $results += Generate-NotRunResults -certificateType $certType -notRunReason "Not Testing Certificate of type $certType`nIsPrimary: $isPrimary" -isPrimary $isPrimary
-                    continue
+                    $testsRanCount = 0
+                    if ($null -eq $adfsCert)
+                    {
+                        $results += Generate-NotRunResults -certificateType $certType -notRunReason "Not Testing Certificate of type $certType`nIsPrimary: $isPrimary" -isPrimary $isPrimary
+                        continue
+                    }
+            
+                    #Order Here is Relevant: If NotRunReason gets set, then other tests will inherit that reason, (and won't run)
+                    $notRunReason = ""
+                    $availableResult = Test-CertificateAvailable -certificateAvailable $adfsCert -certificateType $certType -isPrimary $isPrimary
+                    $results += $availableResult
+                    $testsRanCount++
+
+                    $thumbprint = $adfsCert.Thumbprint
+                    $certToTest = $adfsCert.Certificate
+                    $storeName = $adfsCert.StoreName
+                    $storeLocation = $adfsCert.StoreLocation
+            
+                    if ([String]::IsNullOrEmpty($notRunReason) -and (($availableResult.Result -eq [ResultType]::Fail) -or ($certToTest -eq $null)))
+                    {
+                        $notRunReason = "$certType certificate with thumbprint $thumbprint cannot be found."
+                    }
+            
+                    $results += Test-CertificateSelfSigned -certSelfSigned $certToTest -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason
+                    $testsRanCount++
+                    $results += Test-CertificateHasPrivateKey -certHasPrivateKey $certToTest -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason -storeName $storeName -storeLocation $storeLocation
+                    $testsRanCount++
+                    $results += Test-CertificateExpired -certExpired $certToTest -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason
+                    $testsRanCount++
+                    $results += Test-CertificateCRL -certCrl $certToTest -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason
+                    $testsRanCount++
+                    if ([String]::IsNullOrEmpty($notRunReason) -and (Verify-IsCertExpired -isCertExpired $certToTest))
+                    {
+                        $notRunReason = "Certificate is already expired."
+                    }
+
+                    $results += Test-CertificateAboutToExpire -certAboutToExpire $certToTest -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason
+                    $testsRanCount++
                 }
-
-                #Order Here is Relevant: If NotRunReason gets set, then other tests will inherit that reason, (and won't run)
-                $notRunReason = ""
-                $availableResult = Test-CertificateAvailable -adfsCertificate $adfsCert -certificateType $certType -isPrimary $isPrimary
-                $results += $availableResult
-
-                $thumbprint = $adfsCert.Thumbprint
-                $cert = $adfsCert.Certificate
-                $storeName = $adfsCert.StoreName
-                $storeLocation = $adfsCert.StoreLocation
-
-                if ([String]::IsNullOrEmpty($notRunReason) -and (($availableResult.Result -eq [ResultType]::Fail) -or ($cert -eq $null)))
-                {
-                    $notRunReason = "$certType certificate with thumbprint $thumbprint cannot be found."
+                catch [Exception] {
+                    # catch unexpected exceptions, otherwise all test result generation will be blocked
+                    $reason = $_.Exception.Message
+                    $results += Generate-NotRunResults -certificateType $certType -notRunReason $reason -isPrimary $isPrimary -testsRanCount $testsRanCount -exceptionMessage $reason
                 }
-
-                $results += Test-CertificateSelfSigned -cert $cert -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason
-                $results += Test-CertificateHasPrivateKey -cert $cert -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason -storeName $storeName -storeLocation $storeLocation
-                $results += Test-CertificateExpired -cert $cert -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason
-                $results += Test-CertificateCRL -cert $cert -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason
-                if ([String]::IsNullOrEmpty($notRunReason) -and (Verify-IsCertExpired -cert $cert))
-                {
-                    $notRunReason = "Certificate is already expired."
-                }
-
-                $results += Test-CertificateAboutToExpire -cert $cert -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason
             }
         }
-    }
+    }    
 
     return $results
 }
@@ -347,7 +372,7 @@ Function TestADFSDuplicateSPN
         $farmName = (Retrieve-AdfsProperties).HostName
         $farmSPN = "host/" + $farmName
 
-        $spnResults = GetObjectsFromAD -domain $serviceAccountDomain -filter "(servicePrincipalName=$farmSPN)"
+        $spnResults = GetObjectsFromAD -domain $serviceAccountDomain -filter "(servicePrincipalName=$farmSPN)" -GlobalCatalog
         $svcAcctSearcherResults = GetObjectsFromAD -domain $serviceAccountDomain -filter "(samAccountName=$serviceSamAccountName)"
 
         #root cause: no SPN at all
@@ -677,7 +702,7 @@ Function TestSSLCertSubjectContainsADFSFarmName()
         $sslCertHashes = @()
         switch ($adfsVersion)
         {
-            $adfs3
+            {($_ -eq $adfs3) -or ($_ -eq $adfs4)}
             {
                 foreach ($sslCert in (Get-AdfsSslCertificate))
                 {
@@ -762,44 +787,45 @@ Function TestAdfsAuditPolicyEnabled
 {
     $testName = "TestAdfsAuditPolicyEnabled"
     $testResult = New-Object TestResult -ArgumentList ($testName)
-
-    $auditSettingKey = "MachineAuditPolicy"
+    
+    $auditSettingKey = "MachineAuditPolicy"    
     $stsAuditSetting = "StsAuditConfig"
 
     $testResult.Output = @{`
-            $auditSettingKey = $none;
-        $stsAuditSetting     = $none;
+        $auditSettingKey = $none;
+        $stsAuditSetting = $none;
     }
-
+    
     try
     {
-        $auditPolicy = auditpol /get /subcategory:"{0cce9222-69ae-11d9-bed3-505054503030}" /r | ConvertFrom-Csv
-        $auditSetting = $auditPolicy."Inclusion Setting"
+       #ADFS Audit Enabled Check  
+       $auditEventType="Microsoft.Identity.Health.Adfs.NetUtil.AuditEventType";
+       $auditEventType=[Microsoft.Identity.Health.Adfs.NetUtil]::CheckAudit();
+       $testResult.Output.Set_Item($auditSettingKey, $auditEventType);
 
-        $testResult.Output.Set_Item($auditSettingKey, $auditSetting);
-
-        if ($auditSetting -ne "Success and Failure")
-        {
-            $testResult.Result = [ResultType]::Fail
-            $testResult.Detail = "Audits are not configured for Usage data collection : Expected 'Success and Failure', Actual='$auditSetting'"
-        }
-        else
-        {
+       if (($auditEventType.HasFlag([Microsoft.Identity.Health.Adfs.NetUtil+AuditEventType]::POLICY_AUDIT_EVENT_SUCCESS)) -And ($auditEventType.HasFlag([Microsoft.Identity.Health.Adfs.NetUtil+AuditEventType]::POLICY_AUDIT_EVENT_FAILURE)))
+       {
             #So far, passing if we have the right policy
             $testResult.Result = [ResultType]::Pass
-        }
+       }
+       else
+       {
+            $testResult.Result = [ResultType]::Fail
+            $testResult.Detail = "Audits are not configured for Usage data collection : Expected 'Success and Failure', Actual='$auditEventType'"
+       }
+       #End ADFS Audit Enabled Check             
 
-        #and verify the STS audit setting
-        $role = Get-AdfsRole
-        if ($role -eq $adfsRoleSTS)
-        {
-            $adfsSyncSetting = (Get-ADFSSyncProperties).Role
-            if (IsAdfsSyncPrimaryRole)
-            {
+       #and verify the STS audit setting
+       $role = Get-AdfsRole
+       if ($role -eq "STS")
+       {
+           $adfsSyncSetting = (Get-ADFSSyncProperties).Role
+           if (IsAdfsSyncPrimaryRole)
+           {
                 $audits = (Retrieve-AdfsProperties).LogLevel | where {$_ -like "*Audits"} | Sort-Object
 
                 $auditsStr = ""
-                foreach ($audit in $audits)
+                foreach($audit in $audits)
                 {
                     $auditsStr = $auditsStr + $audit + ";"
                 }
@@ -808,28 +834,31 @@ Function TestAdfsAuditPolicyEnabled
                 if ($audits.Count -ne 2)
                 {
                     $testResult.Result = [ResultType]::Fail
-                    $testResult.Detail = $testResult.Detail + " ADFS Audits are not configured : Expected 'FailureAudits;SuccessAudits', Actual='$auditsStr'"
+                    $testResult.Detail = $testResult.Detail + " ADFS Audits are not configured : Expected 'FailureAudits;SuccessAudits', Actual='$auditsStr'" 
                 }
-            }
-            else
-            {
+           }
+           else
+           {
                 #Did not run on a secondary. Cannot make any assertions on whether this part of the test failed or not
                 $testResult.Output.Set_Item($stsAuditSetting, "(Cannot get this data from secondary node)");
-            }
+           }
         }
         else
         {
-            #Not run on an STS
+            #Not run on an STS 
             $testResult.Result = [ResultType]::Pass
             $testResult.Output.Set_Item($stsAuditSetting, "N/A");
         }
-
+        
         return $testResult
     }
     catch [Exception]
     {
-        return Create-ErrorExceptionTestResult $testName $_.Exception
-    }
+        $testResult.Result = [ResultType]::NotRun
+        $testResult.Detail = $_.Exception.Message
+        $testResult.ExceptionMessage = $_.Exception.Message
+        return $testResult
+    }  
 }
 
 Function TestAdfsRequestToken($retryThreshold = 5, $sleepSeconds = 3)
@@ -1226,7 +1255,7 @@ Function TestOffice365Endpoints()
             $lyncEndpointsTestResult.Detail = "Lync related endpoint is not configured properly; extranet users can experience authentication failure.`n";
         }
 
-        if ($wstrust2005usernamemixed.Enabled -eq $false -or $wstrust2005usernamemixed.Proxy -eq $false)
+        if ($wstrust2005usernamemixed.Enabled -eq $false)
         {
             $lyncEndpointsTestResult.Result = [ResultType]::Fail;
             $lyncEndpointsTestResult.Detail += "Exchange Online related endpoint is not enabled. This will prevent rich clients such as Outlook to connect.`n";
