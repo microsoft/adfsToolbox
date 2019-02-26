@@ -508,7 +508,18 @@ function Update-AdfsServiceAccountRule
         $Account = $ServiceAccount.Split('\') #Input given in the format domain\user 
         $User = $Account[1]
     }
-    $Lookup = Get-ADUser -Filter {Name -eq $User} 
+
+    $IsGmsaAccount = $User.EndsWith("$") 
+
+    if($IsGmsaAccount -eq $true ) 
+    {
+        $Lookup = Get-ADServiceAccount -Filter {SamAccountName -eq $User}
+    }
+    else
+    {
+        $Lookup = Get-ADUser -Filter {Name -eq $User} 
+    }
+
     if($Lookup -eq $null)
     {
         throw "The specified account $User does not exist"
