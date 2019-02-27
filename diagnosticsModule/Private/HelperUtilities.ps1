@@ -745,3 +745,15 @@ function GenerateJSONDiagnosticData()
 
     return ConvertTo-JSON -InputObject $diagnosticData -Depth $maxJsonDepth -Compress
 }
+
+function IsExecutedByConnectHealth {
+    # Attempt to load the synthetic transactions library to test if Connect Health is the executer of the script. 
+    # If the dll exists Connect Health executed the test, skip gathering the RP count.
+    ipmo .\Microsoft.Identity.Health.Adfs.SyntheticTransactions.dll -ErrorAction SilentlyContinue -ErrorVariable synthTxErrVar 
+    if ($synthTxErrVar -ne $null) 
+    { 
+        return $false;
+    }
+
+    return $true    
+}

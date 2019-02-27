@@ -10,7 +10,7 @@ Function TestIsWidRunning()
         $adfsConfigurationDb = (Get-WmiObject -namespace root/ADFS -class SecurityTokenService).Properties["ConfigurationDatabaseConnectionString"].Value;
         If ($adfsConfigurationDb.Contains("microsoft##wid") -or $adfsConfigurationDb.Contains("microsoft##ssee"))
         {
-            $service=Get-Service -name WIDWriter;
+            $service = get-service -name 'MSSQL$MICROSOFT##WID';
             if($service -ne $null)
             {
                 $widServiceState=$service.Status;            
@@ -817,7 +817,7 @@ Function TestAdfsAuditPolicyEnabled
 
        #and verify the STS audit setting
        $role = Get-AdfsRole
-       if ($role -eq "STS")
+       if ($role -eq $adfsRoleSTS)
        {
            $adfsSyncSetting = (Get-ADFSSyncProperties).Role
            if (IsAdfsSyncPrimaryRole)
