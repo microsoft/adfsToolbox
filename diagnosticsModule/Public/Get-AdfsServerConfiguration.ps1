@@ -128,7 +128,11 @@ Function Get-AdfsServerConfiguration
     if ($adfsSyncProperties.Role -eq "PrimaryComputer")
     {
         # Common to All Versions of ADFS
-        $adfsRelyingPartyTrustCount = -1;
+        if (IsExecutedByConnectHealth)
+        {
+            $adfsRelyingPartyTrustCount = -1;
+        }
+
         if ($IncludeTrusts)
         {
             try
