@@ -261,7 +261,7 @@ Function GetSslBinding()
     }
     else
     {
-        if ($adfsVersion -eq $adfs3)
+        if ($adfsVersion -eq $adfs3 -or $adfsVersion -eq $adfs4)
         {
             #select the first binding for the https port found in configuration
             $sslBinding = Get-AdfsSslCertificate | Where-Object {$_.PortNumber -eq $httpsPort} | Select-Object -First 1
@@ -317,22 +317,69 @@ Function IsLocalUser
     return $isLocal
 }
 
-Function GetObjectsFromAD ($domain, $filter)
+Function ObjectDispose([System.IDisposable] $disposeMe)
 {
-    Out-Verbose "Domain = $domain, filter = $filter";
-    $rootDomain = New-Object System.DirectoryServices.DirectoryEntry
-    $searcher = New-Object System.DirectoryServices.DirectorySearcher $domain
-    $searcher.SearchRoot = $rootDomain
-    $searcher.SearchScope = "SubTree"
-    $props = $searcher.PropertiestoLoad.Add("distinguishedName")
-    $props = $searcher.PropertiestoLoad.Add("objectGuid")
-    $searcher.Filter = $filter
-    return $searcher.FindAll()
+    if ($null -ne $disposeMe)
+    {
+        if ($null -ne $disposeMe.psbase)
+        {
+            $disposeMe.psbase.Dispose()
+        }
+        else
+        {
+            $disposeMe.Dispose()
+        }
+    }
+}
+
+Function GetObjectsFromAD ($domain, $filter, [switch] $GlobalCatalog)
+{
+    try
+    {
+        $directoryContext = New-Object System.DirectoryServices.ActiveDirectory.DirectoryContext "Domain",$domain
+        $searchDomain = [System.DirectoryServices.ActiveDirectory.Domain]::GetDomain($directoryContext)
+        $searchDomainDirectoryEntry = $searchDomain.GetDirectoryEntry()
+        $domainDistinguishedName = $searchDomainDirectoryEntry.distinguishedName
+        $domainDirectoryEntry = $null
+
+        if ($GlobalCatalog)
+        {
+            $domainDirectoryEntry = New-Object System.DirectoryServices.DirectoryEntry "GC://$domainDistinguishedName"
+        }
+        else
+        {
+            $domainDirectoryEntry = New-Object System.DirectoryServices.DirectoryEntry "LDAP://$domainDistinguishedName"
+        }
+
+        $searcher = New-Object System.DirectoryServices.DirectorySearcher
+        $searcher.SearchRoot =  $domainDirectoryEntry 
+        $searcher.SearchScope = "SubTree"
+        $props = $searcher.PropertiestoLoad.Add("distinguishedName")
+        $props = $searcher.PropertiestoLoad.Add("objectGuid")
+        $searcher.Filter = $filter
+        $searchResults = $searcher.FindAll()
+        
+        $finalResults = @()
+        if (($searchResults -ne $null) -and ($searchResults.Count -ne 0))
+        {
+            $searchResults | % { $finalResults += $_}
+        }
+        return $finalResults
+    }
+    finally
+    {
+        ObjectDispose $searchDomain
+        ObjectDispose $searchDomainDirectoryEntry
+        ObjectDispose $domainDirectoryEntry
+        ObjectDispose $searcher
+        ObjectDispose $searchResults
+    }
 }
 
 Function Get-FirstEnabledWIAEndpointUri()
 {
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls11 -bor [System.Net.SecurityProtocolType]::Tls12
     $cli = New-Object net.WebClient;
     $sslBinding = GetSslBinding
     $mexString = $cli.DownloadString("https://" + $sslBinding.HostNamePort + "/adfs/services/trust/mex")
@@ -350,14 +397,17 @@ Function Get-FirstEnabledWIAEndpointUri()
 
 Function Get-ADFSIdentifier
 {
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls11 -bor [System.Net.SecurityProtocolType]::Tls12
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
     $cli = New-Object net.WebClient;
-    $sslBinding = GetSslBinding
+    #Set the encoding to handle the cases of servers returning metadata with Unicode characters in it. E.g., Korean.
     $cli.Encoding = [System.Text.Encoding]::UTF8
+    $sslBinding = GetSslBinding
     $fedmetadataString = $cli.DownloadString("https://" + $sslBinding.HostNamePort + "/federationmetadata/2007-06/federationmetadata.xml")
     $fedmetadata = [xml]$fedmetadataString
     return $fedmetadata.EntityDescriptor.entityID
 }
+
 Function NetshHttpShowSslcert
 {
     return (netsh http show sslcert)
@@ -694,4 +744,16 @@ function GenerateJSONDiagnosticData()
     Out-Verbose "Successfully generated diagnostic data"
 
     return ConvertTo-JSON -InputObject $diagnosticData -Depth $maxJsonDepth -Compress
+}
+
+function IsExecutedByConnectHealth {
+    # Attempt to load the synthetic transactions library to test if Connect Health is the executer of the script. 
+    # If the dll exists Connect Health executed the test, skip gathering the RP count.
+    ipmo .\Microsoft.Identity.Health.Adfs.SyntheticTransactions.dll -ErrorAction SilentlyContinue -ErrorVariable synthTxErrVar 
+    if ($synthTxErrVar -ne $null) 
+    { 
+        return $false;
+    }
+
+    return $true    
 }

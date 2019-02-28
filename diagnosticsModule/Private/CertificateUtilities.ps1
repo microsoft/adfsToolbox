@@ -20,13 +20,13 @@
 Function Create-CertificateCheckResult
 {
     param (
-        [System.Security.Cryptography.X509Certificates.X509Certificate2]
-        $cert,
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] 
+        $certCheckResult,
         [string]
         $testName,
         [ResultType]
         $result,
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory=$false)]
         [string]
         $detail = $null
     )
@@ -34,9 +34,9 @@ Function Create-CertificateCheckResult
     $testResult = New-Object TestResult -ArgumentList($testName)
     $testResult.Result = $result
     $testResult.Detail = $detail
-    if ($cert)
+    if ($certCheckResult)
     {
-        $testResult.Output = @{$tpKey = $cert.Thumbprint}
+        $testResult.Output = @{$tpKey = $certCheckResult.Thumbprint}
     }
     return $testResult
 }
@@ -44,21 +44,21 @@ Function Create-CertificateCheckResult
 function Verify-IsCertExpired
 {
     param (
-        [System.Security.Cryptography.X509Certificates.X509Certificate2]
-        $cert
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] 
+        $isCertExpired
     )
 
-    return ($cert.NotAfter - (Get-Date)).TotalDays -le 0
+    return ($isCertExpired.NotAfter - (Get-Date)).TotalDays -le 0
 }
 
 function Verify-IsCertSelfSigned
 {
     param (
-        [System.Security.Cryptography.X509Certificates.X509Certificate2]
-        $cert
+        [System.Security.Cryptography.X509Certificates.X509Certificate2] 
+        $isCertSelfSigned
     )
 
-    return $cert.Subject -eq $cert.IssuerName.Name
+    return $isCertSelfSigned.Subject -eq $isCertSelfSigned.IssuerName.Name
 }
 
 function Generate-NotRunResults
@@ -69,17 +69,26 @@ function Generate-NotRunResults
         [string]
         $notRunReason,
         [bool]
-        $isPrimary = $true
+        $isPrimary = $true,
+        [int]
+        $testsRanCount = 0,
+        [string]
+        $exceptionMessage = $null
     )
 
     $results = @()
+    
+    if($testsRanCount-- -le 0){ $results += Test-CertificateAvailable -certificateAvailable $null -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason }
+    if($testsRanCount-- -le 0){ $results += Test-CertificateSelfSigned -certSelfSigned $null -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason }
+    if($testsRanCount-- -le 0){ $results += Test-CertificateHasPrivateKey -certHasPrivateKey $null -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason -storeName "" -storeLocation ""}
+    if($testsRanCount-- -le 0){ $results += Test-CertificateExpired -certExpired $null -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason}
+    if($testsRanCount-- -le 0){ $results += Test-CertificateCRL -certCrl $null -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason}
+    if($testsRanCount-- -le 0){ $results += Test-CertificateAboutToExpire -certAboutToExpire $null -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason}
 
-    $results += Test-CertificateAvailable -adfsCertificate $null -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason
-    $results += Test-CertificateSelfSigned -cert $null -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason
-    $results += Test-CertificateHasPrivateKey -cert $null -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason -storeName "" -storeLocation ""
-    $results += Test-CertificateExpired -cert $null -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason
-    $results += Test-CertificateCRL -cert $null -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason
-    $results += Test-CertificateAboutToExpire -cert $null -certificateType $certType -isPrimary $isPrimary -notRunReason $notRunReason
+    if($exceptionMessage)
+    {
+        $results | ForEach {$_.ExceptionMessage = $exceptionMessage}
+    }
 
     return $results
 }
@@ -148,37 +157,37 @@ Function Get-AdfsCertificatesToTest()
     return $adfsCertificateCollection
 }
 
-Function GetNormalizedCert([System.Security.Cryptography.X509Certificates.X509Certificate2]$cert)
+Function GetNormalizedCert([System.Security.Cryptography.X509Certificates.X509Certificate2]$normalizedCert)
 {
-    if ($null -eq $cert)
+    if ($null -eq $normalizedCert)
     {
         return $null
     }
 
-    $publicCertPortionBytes = [Byte[]]$cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert)
+    $publicCertPortionBytes = [Byte[]]$normalizedCert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert)
     $certToReturn = New-Object -Type System.Security.Cryptography.X509Certificates.X509Certificate2
     $certToReturn.Import($publicCertPortionBytes)
 
     return $certToReturn
 }
 
-function VerifyCertificateCRL($cert, $revocationCheckSetting)
+function VerifyCertificateCRL($certCRL, $revocationCheckSetting)
 {
-    if ( $null -eq $cert )
+    if ( $null -eq $certCRL )
     {
-        return $null
+      return $null
     }
 
-    $certSubject = $cert.Subject
-    $isSelfSigned = $certSubject -eq $cert.IssuerName.Name
+    $certSubject = $certCRL.Subject
+    $isSelfSigned = $certSubject -eq $certCRL.IssuerName.Name
 
     if ($isSelfSigned)
     {
         #mark the test as passing for self-signed certificates
         $result = new-Object -TypeName PSObject
-        $result | Add-Member -MemberType NoteProperty -Name Subject -Value $cert.Subject
+        $result | Add-Member -MemberType NoteProperty -Name Subject -Value $certCRL.Subject
         $result | Add-Member -MemberType NoteProperty -Name IsSelfSigned -Value $isSelfSigned
-        $result | Add-Member -MemberType NoteProperty -Name Thumbprint -Value $cert.Thumbprint
+        $result | Add-Member -MemberType NoteProperty -Name Thumbprint -Value $certCRL.Thumbprint
         $result | Add-Member -MemberType NoteProperty -Name VerifyResult -Value "N/A"
         $result | Add-Member -MemberType NoteProperty -Name ChainBuildResult -Value @()
         $result | Add-Member -MemberType NoteProperty -Name ChainStatus -Value $true
@@ -188,7 +197,7 @@ function VerifyCertificateCRL($cert, $revocationCheckSetting)
     $chainBuildResult = $true
     $chainStatus = $null
 
-    $verifyResult = $cert.Verify()
+    $verifyResult = $certCRL.Verify()
 
     #If set to none, ADFS will not even check this so ... scrap the results
     #to avoid surfacing noise to the user
@@ -199,7 +208,7 @@ function VerifyCertificateCRL($cert, $revocationCheckSetting)
         $chain.ChainPolicy.UrlRetrievalTimeout = New-TimeSpan -Seconds 10
         $chain.ChainPolicy.VerificationFlags = "AllowUnknownCertificateAuthority"
 
-        switch ($revocationCheckSetting)
+        switch($revocationCheckSetting)
         {
             "CheckEndCert"
             {
@@ -216,7 +225,7 @@ function VerifyCertificateCRL($cert, $revocationCheckSetting)
                 $chain.ChainPolicy.RevocationFlag = "EntireChain"
                 $chain.ChainPolicy.RevocationMode = "Online"
             }
-
+                  
             "CheckChainCacheOnly"
             {
                 $chain.ChainPolicy.RevocationFlag = "EntireChain"
@@ -239,17 +248,17 @@ function VerifyCertificateCRL($cert, $revocationCheckSetting)
             }
         }
 
-        $chainBuildResult = $chain.Build($cert)
+        $chainBuildResult = $chain.Build($certCRL)
         $chainStatus = $chain.ChainStatus
     }
 
-    $certSubject = $cert.Subject
-    $isSelfSigned = $certSubject -eq $cert.IssuerName.Name
+    $certSubject = $certCRL.Subject
+    $isSelfSigned =  $certSubject -eq $certCRL.IssuerName.Name
 
-    $result = new-Object -TypeName PSObject
-    $result | Add-Member -MemberType NoteProperty -Name Subject -Value $cert.Subject
+    $result = new-Object -TypeName PSObject    
+    $result | Add-Member -MemberType NoteProperty -Name Subject -Value $certCRL.Subject
     $result | Add-Member -MemberType NoteProperty -Name IsSelfSigned -Value $isSelfSigned
-    $result | Add-Member -MemberType NoteProperty -Name Thumbprint -Value $cert.Thumbprint
+    $result | Add-Member -MemberType NoteProperty -Name Thumbprint -Value $certCRL.Thumbprint
     $result | Add-Member -MemberType NoteProperty -Name VerifyResult -Value $verifyResult
     $result | Add-Member -MemberType NoteProperty -Name ChainBuildResult -Value $chainBuildResult
     $result | Add-Member -MemberType NoteProperty -Name ChainStatus -Value $chainStatus
