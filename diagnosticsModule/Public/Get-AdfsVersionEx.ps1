@@ -1,5 +1,5 @@
 ﻿Function Get-AdfsVersionEx
-{    
+{
     [CmdletBinding()]
     param()
 

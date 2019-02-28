@@ -293,6 +293,6 @@ Function Get-AdfsSystemInformation()
     {
         $systemOutput | Add-Member NoteProperty -Name $agentInformationPropertyName -Value $null -Force
     }
-    
+
     return $systemOutput;
 }

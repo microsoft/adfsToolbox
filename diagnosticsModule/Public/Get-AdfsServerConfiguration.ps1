@@ -120,7 +120,7 @@ Function Get-AdfsServerConfiguration
         $configurationOutput | Add-Member NoteProperty -name "ADFSSyncProperties" -value "SCRIPTERROR: $_.Exception.Message" -Force;
     }
 
-    if ( $null -eq $adfsSyncProperties ) 
+    if ( $null -eq $adfsSyncProperties )
     {
        return $configurationOutput
     }
@@ -154,7 +154,7 @@ Function Get-AdfsServerConfiguration
             catch [Exception] {
                 $configurationOutput | Add-Member NoteProperty -name "ADFSRelyingPartyTrust" -value "SCRIPTERROR: $_.Exception.Message" -Force;
             }
-        }       
+        }
         try
         {
             $adfsAttributeStore = Get-AdfsAttributeStore -ErrorVariable adfsAttributeStore;
@@ -197,7 +197,7 @@ Function Get-AdfsServerConfiguration
         catch [Exception] {
             $configurationOutput | Add-Member NoteProperty -name "ADFSProperties" -value "SCRIPTERROR: $_.Exception.Message" -Force;
         }
-        
+
         try
         {            
             # To prevent heavy usage of SQL for customers with large RP sets for every run (1hr interval) check for CH            
@@ -215,13 +215,13 @@ Function Get-AdfsServerConfiguration
         {
             $adfsClaimsProviderTrustCount = 0
             $adfsClaimsProviderTrustCount = (Get-AdfsClaimsProviderTrust).Count;
-            
+
             $configurationOutput | Add-Member NoteProperty -name "ADFSClaimsProviderTrustCount" -value $adfsClaimsProviderTrustCount -Force;
         }
         catch [Exception] {
             $configurationOutput | Add-Member NoteProperty -name "ADFSClaimsProviderTrustCount" -value "SCRIPTERROR: $_.Exception.Message" -Force;
         }
-        
+
         try
         {
             $adfSConfigurationDatabaseConnectionString = (Get-WmiObject -namespace root/ADFS -class SecurityTokenService).Properties["ConfigurationDatabaseConnectionString"].Value
@@ -230,18 +230,18 @@ Function Get-AdfsServerConfiguration
         catch [Exception] {
             $configurationOutput | Add-Member NoteProperty -name "ADFSConfigurationDatabaseConnectionStringy" -value "SCRIPTERROR: $_.Exception.Message" -Force;
         }
-        
+
         $adfsServiceAccount = (Get-WmiObject win32_service | Where-Object {$_.name -eq "adfssrv"}).StartName;
         $configurationOutput | Add-Member NoteProperty -name "AdfssrvServiceAccount" -value $adfsServiceAccount -Force;
 
         $ADFSVersion = Get-AdfsVersion($OSVersion);
         $configurationOutput | Add-Member NoteProperty -name "AdfsVersion" -value $ADFSVersion -Force;
-        
+
         try
         {
             $aadRpId = "urn:federation:MicrosoftOnline";
             $aadRp =  Get-ADFSRelyingPartyTrust -Identifier $aadRpId;
-            $aadRpStatus = ""        
+            $aadRpStatus = ""
 
             if ($aadRp -eq $null)
             {
@@ -263,7 +263,7 @@ Function Get-AdfsServerConfiguration
         catch [Exception] {
             $configurationOutput | Add-Member NoteProperty -name "AadTrustStatus" -value "SCRIPTERROR: $_.Exception.Message" -Force;
         }
-    
+
         Switch ($ADFSVersion)
         {
             {($_ -eq $adfs3) -or ($_ -eq $adfs4)}

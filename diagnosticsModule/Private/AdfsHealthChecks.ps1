@@ -29,7 +29,7 @@ Function TestIsWidRunning()
             }
         }        
     }
-    catch [Exception] 
+    catch [Exception]
     {
         $testResult= New-Object TestResult -ArgumentList($testName);
         $testResult.Result = [ResultType]::NotRun;
@@ -151,14 +151,14 @@ Function TestSslBindings()
 }
 
 function Test-AdfsCertificates ()
-{    
+{
     $primaryCertificateTypes = @("Service-Communications", "Token-Decrypting", "Token-Signing", "SSL")
     $secondaryCerticateTypes = $primaryCertificateTypes | ? {$_ -ne "Service-Communications" -and $_ -ne "SSL"}
-    
+
     $primaryValues = @{$true=$primaryCertificateTypes; $false = $secondaryCerticateTypes}
-    
+
     $results = @()
-    
+
     $notRunTests = $false
     $notRunReason = ""
 
@@ -167,19 +167,19 @@ function Test-AdfsCertificates ()
         $notRunTests = $true
         $notRunReason = "AD FS Service is not running"
     }
-    
+
     try
-    {    
+    {
         if (Test-RunningOnAdfsSecondaryServer)
         {
             $notRunTests = $true
             $notRunReason = "This check does not run on AD FS Secondary Server"
-        }        
+        }
     }
     catch
     {
         $notRunTests = $true
-        $notRunReason = "Cannot verify sync status of AD FS Server " + $_.Exception.ToString()        
+        $notRunReason = "Cannot verify sync status of AD FS Server " + $_.Exception.ToString()
     }
 
     if ($notRunTests)
@@ -201,7 +201,7 @@ function Test-AdfsCertificates ()
         foreach ($certType in $primaryValues.Item($isPrimary))
         {
             $adfsCerts = @($certsToCheck | where {$_.CertificateType -eq $certType -and $_.IsPrimary -eq $isPrimary})
-            
+
             foreach ($adfsCert in $adfsCerts)
             {
                 try
@@ -252,7 +252,7 @@ function Test-AdfsCertificates ()
                 }
             }
         }
-    }    
+    }
 
     return $results
 }
@@ -787,7 +787,7 @@ Function TestAdfsAuditPolicyEnabled
 {
     $testName = "TestAdfsAuditPolicyEnabled"
     $testResult = New-Object TestResult -ArgumentList ($testName)
-    
+
     $auditSettingKey = "MachineAuditPolicy"    
     $stsAuditSetting = "StsAuditConfig"
 
@@ -795,7 +795,7 @@ Function TestAdfsAuditPolicyEnabled
         $auditSettingKey = $none;
         $stsAuditSetting = $none;
     }
-    
+
     try
     {
        #ADFS Audit Enabled Check  
@@ -834,7 +834,7 @@ Function TestAdfsAuditPolicyEnabled
                 if ($audits.Count -ne 2)
                 {
                     $testResult.Result = [ResultType]::Fail
-                    $testResult.Detail = $testResult.Detail + " ADFS Audits are not configured : Expected 'FailureAudits;SuccessAudits', Actual='$auditsStr'" 
+                    $testResult.Detail = $testResult.Detail + " ADFS Audits are not configured : Expected 'FailureAudits;SuccessAudits', Actual='$auditsStr'"
                 }
            }
            else
@@ -845,11 +845,11 @@ Function TestAdfsAuditPolicyEnabled
         }
         else
         {
-            #Not run on an STS 
+            #Not run on an STS
             $testResult.Result = [ResultType]::Pass
             $testResult.Output.Set_Item($stsAuditSetting, "N/A");
         }
-        
+
         return $testResult
     }
     catch [Exception]
