@@ -380,11 +380,9 @@ InModuleScope ADFSDiagnosticsModule {
             # Assert
             $ret.Result | should beexactly Fail
             $ret.Detail | should beexactly "There were missing certificates on some of the secondary servers. There may be an issue with proxy trust propogation."\
-            $_adfsServers | ForEach-Object {
-                $server = $_
-                $_missingCertificates | ForEach-Object {
-                    $ret.Output.ErroneousCertificates[$server] | should contain $_
-                }
+            Foreach ($server in $_adfsServers)
+            {
+                $ret.Output.ErroneousCertificates[$server] | should be $_missingCertificates
             }
         }
 

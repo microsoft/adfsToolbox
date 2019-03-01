@@ -270,9 +270,13 @@ Function TestAdfsProxyHealth()
             "TestNonSelfSignedCertificatesInRootStore", `
             "TestSelfSignedCertificatesInIntermediateCaStore");
 
-    if ([string]::IsNullOrWhiteSpace($sslThumbprint) -and -not (IsExecutedByConnectHealth))
+    if ([string]::IsNullOrWhiteSpace($sslThumbprint))
     {
+        # If Connect Health executed this test there is no way to find this thumbprint so we skip the test
+        if (-not (IsExecutedByConnectHealth))
+        {
             $functionsToRun += "TestProxySslBindings"
+        }
     }
     else
     {
