@@ -77,6 +77,7 @@ Function Test-AdfsServerToken
 
     $rst = $null
     $endpoint = $null
+    [Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
 
     if ($credential -ne $null)
     {
@@ -129,5 +130,8 @@ Function Test-AdfsServerToken
 
     [Net.ServicePointManager]::SecurityProtocol = $oldProtocol
     $tokenXml = [xml]$webresp.Content
+
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $null;
+
     return $tokenXml.OuterXml
 }

@@ -685,11 +685,15 @@ function GenerateDiagnosticData()
 
     # create aggregate object to store diagnostic output from each cmdlet run
     $diagnosticData = New-Object -TypeName PSObject
-    $testAdfsServerHealth = New-Object -TypeName PSObject 
+    $testAdfsServerHealth = New-Object -TypeName PSObject
 
     # Add ADFS configuration information to the diagnostics json
     $adfsConfiguration = New-Object -TypeName PSObject
     $adfsConfiguration =  AdfsConfiguration
+    $metadata = New-Object -TypeName PSObject
+    $metadata | Add-Member -MemberType NoteProperty -Name 'Run Id' -Value (New-Guid).Guid
+    $metadata | Add-Member -MemberType NoteProperty -Name 'Timestamp' -Value (Get-Date).ToUniversalTime()
+    $metadata | Add-Member -MemberType NoteProperty -Name 'Version' -Value $outputVersion
 
     foreach($module in $modules.keys)
     {
@@ -723,8 +727,8 @@ function GenerateDiagnosticData()
     # add the AD FS Configuration information to the output
     Add-Member -InputObject $moduleData -MemberType NoteProperty -Name "Adfs-Configuration" -Value $adfsConfiguration
 
-    # add the cmdlet version to the output
-    Add-Member -InputObject $diagnosticData -MemberType NoteProperty -Name "Version" -Value $outputVersion
+    # add metadata
+    Add-Member -InputObject $moduleData -MemberType NoteProperty -Name "Metadata" -Value $metadata
 
     return $diagnosticData
 }
