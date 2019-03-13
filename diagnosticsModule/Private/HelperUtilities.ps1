@@ -352,13 +352,13 @@ Function GetObjectsFromAD ($domain, $filter, [switch] $GlobalCatalog)
         }
 
         $searcher = New-Object System.DirectoryServices.DirectorySearcher
-        $searcher.SearchRoot =  $domainDirectoryEntry 
+        $searcher.SearchRoot =  $domainDirectoryEntry
         $searcher.SearchScope = "SubTree"
         $props = $searcher.PropertiestoLoad.Add("distinguishedName")
         $props = $searcher.PropertiestoLoad.Add("objectGuid")
         $searcher.Filter = $filter
         $searchResults = $searcher.FindAll()
-        
+
         $finalResults = @()
         if (($searchResults -ne $null) -and ($searchResults.Count -ne 0))
         {
@@ -691,7 +691,7 @@ function GenerateDiagnosticData()
     $adfsConfiguration = New-Object -TypeName PSObject
     $adfsConfiguration =  AdfsConfiguration
     $metadata = New-Object -TypeName PSObject
-    $metadata | Add-Member -MemberType NoteProperty -Name 'Run Id' -Value (New-Guid).Guid
+    $metadata | Add-Member -MemberType NoteProperty -Name 'Run Id' -Value ([Guid]::NewGuid()).Guid
     $metadata | Add-Member -MemberType NoteProperty -Name 'Timestamp' -Value (Get-Date).ToUniversalTime()
     $metadata | Add-Member -MemberType NoteProperty -Name 'Version' -Value $outputVersion
 
@@ -751,13 +751,13 @@ function GenerateJSONDiagnosticData()
 }
 
 function IsExecutedByConnectHealth {
-    # Attempt to load the synthetic transactions library to test if Connect Health is the executer of the script. 
+    # Attempt to load the synthetic transactions library to test if Connect Health is the executer of the script.
     # If the dll exists Connect Health executed the test, skip gathering the RP count.
-    ipmo .\Microsoft.Identity.Health.Adfs.SyntheticTransactions.dll -ErrorAction SilentlyContinue -ErrorVariable synthTxErrVar 
-    if ($synthTxErrVar -ne $null) 
-    { 
+    ipmo .\Microsoft.Identity.Health.Adfs.SyntheticTransactions.dll -ErrorAction SilentlyContinue -ErrorVariable synthTxErrVar
+    if ($synthTxErrVar -ne $null)
+    {
         return $false;
     }
 
-    return $true    
+    return $true
 }
