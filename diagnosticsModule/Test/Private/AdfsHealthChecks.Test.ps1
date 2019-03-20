@@ -279,8 +279,8 @@ InModuleScope ADFSDiagnosticsModule {
 
                 # Assert
                 $ret.Result | should beexactly Error
-                $ret.ExceptionMessage | should beexactly "Unexpected value of the service account badAccount. Expected in DOMAIN\\User format"
-                $ret.Exception | should beexactly "System.Management.Automation.RuntimeException: Unexpected value of the service account badAccount. Expected in DOMAIN\\User format"
+                $ret.ExceptionMessage | should beexactly "Unexpected value of the service account badAccount. Expected in DOMAIN\\User format or UPN:User@Domain"
+                $ret.Exception | should beexactly "System.Management.Automation.RuntimeException: Unexpected value of the service account badAccount. Expected in DOMAIN\\User format or UPN:User@Domain"
             }
         }
     }
