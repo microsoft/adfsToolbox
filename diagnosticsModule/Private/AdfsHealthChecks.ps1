@@ -360,14 +360,25 @@ Function TestADFSDuplicateSPN
             throw "ADFS Service account is null or empty. The WMI configuration is in an inconsistent state"
         }
 
+        # Verify User is either in domain\user format or UPN format, get the domain and username values and make Service account is in the domain\user format.
         $serviceAccountParts = $adfsServiceAccount.Split('\\')
         if ($serviceAccountParts.Length -ne 2)
         {
-            throw "Unexpected value of the service account $adfsServiceAccount. Expected in DOMAIN\\User format"
-        }
+            $serviceAccountPartsUpn = $adfsServiceAccount.Split('@')
+            if ($serviceAccountPartsUpn.Length -ne 2)
+            {
+                throw "Unexpected value of the service account $adfsServiceAccount. Expected in DOMAIN\\User format or UPN:User@Domain"
+            }
 
-        $serviceAccountDomain = $serviceAccountParts[0]
-        $serviceSamAccountName = $serviceAccountParts[1]
+            $serviceAccountDomain = $serviceAccountPartsUpn[1]
+            $serviceSamAccountName = $serviceAccountPartsUpn[0]
+            $adfsServiceAccount = "$serviceAccountDomain\$serviceSamAccountName"
+        }
+        else
+        {
+            $serviceAccountDomain = $serviceAccountParts[0]
+            $serviceSamAccountName = $serviceAccountParts[1]
+        }
 
         $farmName = (Retrieve-AdfsProperties).HostName
         $farmSPN = "host/" + $farmName
@@ -1064,14 +1075,25 @@ Function TestServicePrincipalName
         }
         else
         {
-            $serviceAccountParts = $adfsServiceAccount.Split('\\');
+            # Verify User is either in domain\user format or UPN format, get the domain and username values and make Service account is in the domain\user format.
+            $serviceAccountParts = $adfsServiceAccount.Split('\\')
             if ($serviceAccountParts.Length -ne 2)
             {
-                throw "Unexpected value of the service account $adfsServiceAccount. Expected in DOMAIN\\User format";
-            }
+                $serviceAccountPartsUpn = $adfsServiceAccount.Split('@')
+                if ($serviceAccountPartsUpn.Length -ne 2)
+                {
+                    throw "Unexpected value of the service account $adfsServiceAccount. Expected in DOMAIN\\User format or UPN:User@Domain"
+                }
 
-            $serviceAccountDomain = $serviceAccountParts[0];
-            $serviceSamAccountName = $serviceAccountParts[1];
+                $serviceAccountDomain = $serviceAccountPartsUpn[1]
+                $serviceSamAccountName = $serviceAccountPartsUpn[0]
+                $adfsServiceAccount = "$serviceAccountDomain\$serviceSamAccountName"
+            }
+            else
+            {
+                $serviceAccountDomain = $serviceAccountParts[0]
+                $serviceSamAccountName = $serviceAccountParts[1]
+            }
         }
         Out-Verbose "ADFS service account = $serviceSamAccountName";
 

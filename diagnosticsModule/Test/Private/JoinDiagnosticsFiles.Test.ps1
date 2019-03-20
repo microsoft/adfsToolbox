@@ -6,7 +6,7 @@ Import-Module $root\ADFSDiagnosticsModule.psm1 -Force
 
 InModuleScope ADFSDiagnosticsModule {
     # The output file
-    $MergedFiledName = ".\Data\Diagnostics\MergedDiagnosticsFile.json"
+    $MergedFiledName = ".\Test\Private\Data\Diagnostics\MergedDiagnosticsFile.json"
 
     # Cleanup any existing data file
     if (Test-Path $MergedFiledName) {
@@ -16,7 +16,7 @@ InModuleScope ADFSDiagnosticsModule {
 
     Describe "TestJoinDiagnosticsFile" {
         It "should pass" {
-            Join-DiagnosticsFiles .\Data\Diagnostics
+            Join-DiagnosticsFiles .\Test\Private\Data\Diagnostics
 
             # Make sure the merged file exists
             $exists = Test-Path $MergedFiledName
