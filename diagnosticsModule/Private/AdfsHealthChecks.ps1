@@ -361,8 +361,7 @@ Function TestADFSDuplicateSPN
         }
 
         # Verify User is either in domain\user format or UPN format, get the domain and username values and make Service account is in the domain\user format.
-        $serviceAccountParts = $adfsServiceAccount.Split('\\')
-        if ($serviceAccountParts.Length -ne 2)
+        if (IsUserPrincipalNameFormat($adfsServiceAccount))
         {
             $serviceAccountPartsUpn = $adfsServiceAccount.Split('@')
             if ($serviceAccountPartsUpn.Length -ne 2)
@@ -370,16 +369,29 @@ Function TestADFSDuplicateSPN
                 throw "Unexpected value of the service account $adfsServiceAccount. Expected in DOMAIN\\User format or UPN:User@Domain"
             }
 
-            $serviceAccountDomain = $serviceAccountPartsUpn[1]
             $serviceSamAccountName = $serviceAccountPartsUpn[0]
-            $adfsServiceAccount = "$serviceAccountDomain\$serviceSamAccountName"
+            $serviceAccountDomain = TryGetDomainNameFromUpn $adfsServiceAccount
+            if ($serviceAccountDomain)
+            {
+                $adfsServiceAccount = "$serviceAccountDomain\$serviceSamAccountName"
+            }
+            else
+            {
+                throw "Unable to find user object in AD for the service account $adfsServiceAccount."
+            }
         }
         else
         {
+            $serviceAccountParts = $adfsServiceAccount.Split('\\')
+            if ($serviceAccountParts.Length -ne 2)
+            {
+                throw "Unexpected value of the service account $adfsServiceAccount. Expected in DOMAIN\\User format or UPN:User@Domain"
+            }
             $serviceAccountDomain = $serviceAccountParts[0]
             $serviceSamAccountName = $serviceAccountParts[1]
         }
 
+        # Get Farm Name from adfsproperties and use that to determin SPN format
         $farmName = (Retrieve-AdfsProperties).HostName
         $farmSPN = "host/" + $farmName
 
@@ -1068,32 +1080,32 @@ Function TestServicePrincipalName
         Out-Verbose "Checking format of ADFS service account. $adfsServiceAccount";
         if (IsUserPrincipalNameFormat($adfsServiceAccount))
         {
-            Out-Verbose "Detected UPN format.";
-            $serviceSamAccountParts = $adfsServiceAccount.Split('@');
-            $serviceSamAccountName = $serviceSamAccountParts[0];
-            $serviceAccountDomain = $serviceSamAccountParts[1];
-        }
-        else
-        {
-            # Verify User is either in domain\user format or UPN format, get the domain and username values and make Service account is in the domain\user format.
-            $serviceAccountParts = $adfsServiceAccount.Split('\\')
-            if ($serviceAccountParts.Length -ne 2)
+            $serviceAccountPartsUpn = $adfsServiceAccount.Split('@')
+            if ($serviceAccountPartsUpn.Length -ne 2)
             {
-                $serviceAccountPartsUpn = $adfsServiceAccount.Split('@')
-                if ($serviceAccountPartsUpn.Length -ne 2)
-                {
-                    throw "Unexpected value of the service account $adfsServiceAccount. Expected in DOMAIN\\User format or UPN:User@Domain"
-                }
+                throw "Unexpected value of the service account $adfsServiceAccount. Expected in DOMAIN\\User format or UPN:User@Domain"
+            }
 
-                $serviceAccountDomain = $serviceAccountPartsUpn[1]
-                $serviceSamAccountName = $serviceAccountPartsUpn[0]
+            $serviceSamAccountName = $serviceAccountPartsUpn[0]
+            $serviceAccountDomain = TryGetDomainNameFromUpn $adfsServiceAccount
+            if ($serviceAccountDomain)
+            {
                 $adfsServiceAccount = "$serviceAccountDomain\$serviceSamAccountName"
             }
             else
             {
-                $serviceAccountDomain = $serviceAccountParts[0]
-                $serviceSamAccountName = $serviceAccountParts[1]
+                throw "Unable to find user object in AD for the service account $adfsServiceAccount."
             }
+        }
+        else 
+        {
+            $serviceAccountParts = $adfsServiceAccount.Split('\\')
+            if ($serviceAccountParts.Length -ne 2)
+            {
+                throw "Unexpected value of the service account $adfsServiceAccount. Expected in DOMAIN\\User format or UPN:User@Domain"
+            }
+            $serviceAccountDomain = $serviceAccountParts[0]
+            $serviceSamAccountName = $serviceAccountParts[1]
         }
         Out-Verbose "ADFS service account = $serviceSamAccountName";
 

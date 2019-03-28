@@ -124,6 +124,7 @@ InModuleScope ADFSDiagnosticsModule {
                 Mock -CommandName Retrieve-AdfsProperties -MockWith { return New-Object PSObject -Property @{ "Hostname" = $_hostname }}
                 Mock -CommandName Invoke-Expression -MockWith { return @("Existing SPN found!", $_path) } -ParameterFilter { $Command -eq "setspn -f -q HOST/$_hostname"}
                 Mock -CommandName Invoke-Expression -MockWith { return @("Existing SPN found!", $_path) } -ParameterFilter { $Command -eq "setspn -f -q HTTP/$_hostname"}
+                Mock -CommandName TryGetDomainNameFromUpn -MockWith { return "contoso.com" }
             }
 
             It "should pass when service account is in UPN format" {
@@ -169,6 +170,7 @@ InModuleScope ADFSDiagnosticsModule {
                 Mock -CommandName GetObjectsFromAD -MockWith { return New-Object PSObject -Property @{ "Path" = $_fullPath } }
                 Mock -CommandName Retrieve-AdfsProperties -MockWith { return New-Object PSObject -Property @{ "Hostname" = $_hostname }}
                 Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_upnServiceAccount; "Name" = $adfsServiceName } }
+                Mock -CommandName TryGetDomainNameFromUpn -MockWith { return "contoso.com" }
             }
 
             It "when no HOST SPN is found" {

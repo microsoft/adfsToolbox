@@ -376,6 +376,66 @@ Function GetObjectsFromAD ($domain, $filter, [switch] $GlobalCatalog)
     }
 }
 
+function TryGetDomainNameFromUpn ($Upn)
+{
+    $serviceAccountPartsUpn = $Upn.Split('@')
+    $serviceAccountDomain = $serviceAccountPartsUpn[1]
+    $serviceSamAccountName = $serviceAccountPartsUpn[0]
+
+    $localSystemDomainName = (Get-WmiObject Win32_ComputerSystem).Domain
+
+    # If UPN domain matches local domain then we know this is the correct domain and return
+    if ($serviceAccountDomain -like $localSystemDomainName)
+    {
+        return $serviceAccountDomain
+    }
+
+    # Try to find user in local domain if UPN domain didn't match local domain
+    $foundUser = GetObjectsFromAD -domain $localSystemDomainName -filter "(&(samAccountName=$serviceSamAccountName)(userPrincipalName=$Upn))"
+    if ($foundUser)
+    {
+        return $localSystemDomainName
+    }
+    
+    # If user is not found in local domain lookup root DN and query the GC for the user 
+    try
+    {
+        $rootDse = New-Object System.DirectoryServices.DirectoryEntry "LDAP://RootDSE"
+
+        $rootDomain = GetDomainNameFromDistinguishedName $rootDse.Properties.rootDomainNamingContext
+                
+        $foundUser = GetObjectsFromAD -domain $rootDomain -filter "(&(samAccountName=$serviceSamAccountName)(userPrincipalName=$Upn))" -GlobalCatalog
+        if ($foundUser)
+        {
+            return GetDomainNameFromDistinguishedName $foundUser.Properties.distinguishedname
+        }
+    }
+    finally
+    {       
+        if ($rootDse.GetType().ImplementedInterfaces)
+        {
+            if ($rootDse.GetType().ImplementedInterfaces.Name.Contains("IDisposable"))
+            {
+                OjectDispose $rootDse
+            }   
+        }
+    }
+
+    return $null
+}
+
+Function GetDomainNameFromDistinguishedName ([string]$dn)
+{
+    $location = $dn.IndexOf("DC=")
+
+    $domainName = $dn.Substring($location, $dn.Length - $location)
+
+    $domainName = $domainName.Replace(",DC=",".")
+    $domainName = $domainName.Trim("DC=")
+
+    return $domainName
+}
+
 Function Get-FirstEnabledWIAEndpointUri()
 {
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
