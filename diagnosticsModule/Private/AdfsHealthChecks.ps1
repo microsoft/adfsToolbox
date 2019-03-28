@@ -377,7 +377,9 @@ Function TestADFSDuplicateSPN
             }
             else
             {
-                throw "Unable to find user object in AD for the service account $adfsServiceAccount."
+                $testResult.Result = [ResultType]::NotRun;
+                $testResult.Detail = "Unable to find user object in AD for the service account $adfsServiceAccount.";
+                return $testResult;
             }
         }
         else
@@ -1094,7 +1096,9 @@ Function TestServicePrincipalName
             }
             else
             {
-                throw "Unable to find user object in AD for the service account $adfsServiceAccount."
+                $testResult.Result = [ResultType]::NotRun;
+                $testResult.Detail = "Unable to find user object in AD for the service account $adfsServiceAccount.";
+                return $testResult;
             }
         }
         else 
