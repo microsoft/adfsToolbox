@@ -341,6 +341,8 @@ Function GetObjectsFromAD ($domain, $filter, [switch] $GlobalCatalog)
         $searchDomainDirectoryEntry = $searchDomain.GetDirectoryEntry()
         $domainDistinguishedName = $searchDomainDirectoryEntry.distinguishedName
         $domainDirectoryEntry = $null
+        
+        $searcher = New-Object System.DirectoryServices.DirectorySearcher
 
         if ($GlobalCatalog)
         {
@@ -349,10 +351,9 @@ Function GetObjectsFromAD ($domain, $filter, [switch] $GlobalCatalog)
         else
         {
             $domainDirectoryEntry = New-Object System.DirectoryServices.DirectoryEntry "LDAP://$domainDistinguishedName"
+            $searcher.SearchRoot =  $domainDirectoryEntry
         }
 
-        $searcher = New-Object System.DirectoryServices.DirectorySearcher
-        $searcher.SearchRoot =  $domainDirectoryEntry
         $searcher.SearchScope = "SubTree"
         $props = $searcher.PropertiestoLoad.Add("distinguishedName")
         $props = $searcher.PropertiestoLoad.Add("objectGuid")
@@ -390,37 +391,13 @@ function TryGetDomainNameFromUpn ($Upn)
         return $serviceAccountDomain
     }
 
-    # Try to find user in local domain if UPN domain didn't match local domain
-    $foundUser = GetObjectsFromAD -domain $localSystemDomainName -filter "(&(samAccountName=$serviceSamAccountName)(userPrincipalName=$Upn))"
+    # Try to find user forest by querying the GC
+    $foundUser = GetObjectsFromAD -domain $localSystemDomainName -filter "(&(samAccountName=$serviceSamAccountName)(userPrincipalName=$Upn))" -GlobalCatalog
     if ($foundUser)
     {
-        return $localSystemDomainName
+        return GetDomainNameFromDistinguishedName $foundUser.Properties.distinguishedname
     }
-    
-    # If user is not found in local domain lookup root DN and query the GC for the user 
-    try
-    {
-        $rootDse = New-Object System.DirectoryServices.DirectoryEntry "LDAP://RootDSE"
-
-        $rootDomain = GetDomainNameFromDistinguishedName $rootDse.Properties.rootDomainNamingContext
-                
-        $foundUser = GetObjectsFromAD -domain $rootDomain -filter "(&(samAccountName=$serviceSamAccountName)(userPrincipalName=$Upn))" -GlobalCatalog
-        if ($foundUser)
-        {
-            return GetDomainNameFromDistinguishedName $foundUser.Properties.distinguishedname
-        }
-    }
-    finally
-    {       
-        if ($rootDse.GetType().ImplementedInterfaces)
-        {
-            if ($rootDse.GetType().ImplementedInterfaces.Name.Contains("IDisposable"))
-            {
-                OjectDispose $rootDse
-            }   
-        }
-    }
-
+        
     return $null
 }
 

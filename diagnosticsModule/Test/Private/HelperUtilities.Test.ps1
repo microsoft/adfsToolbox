@@ -395,12 +395,13 @@ InModuleScope ADFSDiagnosticsModule {
             $_childDomainName = "test.contoso.com"
             $_rootDomainName = "contoso.local"
             $_localDistinguishedName = "DC=contoso,DC=local"
+            $_childDistinguishedName = "DC=test,DC=contoso,DC=com"
             
-            $_mockRootObject = new-object psobject;
-            $_mockRootObject | Add-Member "Properties" @{ "rootDomainNamingContext"=$_localDistinguishedName };
+            $_mockAdUserLocalDomainObject = New-Object psobject
+            $_mockAdUserLocalDomainObject | Add-Member "Properties" @{ "distinguishedname"=$_localDistinguishedName };
 
-            $_mockAdUserObject = New-Object psobject
-            $_mockAdUserObject | Add-Member "Properties" @{ "distinguishedname"=$_localDistinguishedName };
+            $_mockAdUserForestDomainObject = New-Object psobject
+            $_mockAdUserForestDomainObject | Add-Member "Properties" @{ "distinguishedname"=$_childDistinguishedName };
         }
 
         It "Should return $_domainName, UPN domain name same as local should return domain name from UPN" {
@@ -417,7 +418,7 @@ InModuleScope ADFSDiagnosticsModule {
         It "Should return $_childDomainName, UPN domain different than computer domain but account found in computer domain" {
             # Arrange
             Mock -CommandName Get-WmiObject { return @{"Domain"=$_childDomainName} }  
-            Mock -CommandName GetObjectsFromAD { return $true }
+            Mock -CommandName GetObjectsFromAD { return $_mockAdUserForestDomainObject }
 
             # Act            
             $ret = TryGetDomainNameFromUpn $_upn
@@ -428,11 +429,8 @@ InModuleScope ADFSDiagnosticsModule {
 
         It "Should return $_rootDomainName, UPN domain name different than computer domain, account found in root domain GC" {
             # Arrange
-            Mock -CommandName Get-WmiObject { return @{"Domain"=$_childDomainName} }  
-            Mock -CommandName GetObjectsFromAD { return $false } -ParameterFilter { $domain -eq $_childDomainName }
-            Mock -CommandName New-Object { return $_mockRootObject }
-            Mock -CommandName GetObjectsFromAD { return $_mockAdUserObject } -ParameterFilter { $domain -eq $_rootDomainName }
-            Mock -CommandName ObjectDispose { return $true }
+            Mock -CommandName Get-WmiObject { return @{"Domain"=$_childDomainName} } 
+            Mock -CommandName GetObjectsFromAD { return $_mockAdUserLocalDomainObject } 
 
             # Act            
             $ret = TryGetDomainNameFromUpn $_upn
@@ -444,10 +442,7 @@ InModuleScope ADFSDiagnosticsModule {
         It "Should return null, UPN not found in forest" {
             # Arrange
             Mock -CommandName Get-WmiObject { return @{"Domain"=$_childDomainName} }  
-            Mock -CommandName GetObjectsFromAD { return $false } -ParameterFilter { $domain -eq $_childDomainName }
-            Mock -CommandName New-Object { return $_mockRootObject }
-            Mock -CommandName ObjectDispose { return $true }
-            Mock -CommandName GetObjectsFromAD { return $false } -ParameterFilter { $domain -eq $_rootDomainName }
+            Mock -CommandName GetObjectsFromAD { return $false } 
 
             # Act            
             $ret = TryGetDomainNameFromUpn $_upn
