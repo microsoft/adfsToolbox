@@ -341,6 +341,8 @@ Function GetObjectsFromAD ($domain, $filter, [switch] $GlobalCatalog)
         $searchDomainDirectoryEntry = $searchDomain.GetDirectoryEntry()
         $domainDistinguishedName = $searchDomainDirectoryEntry.distinguishedName
         $domainDirectoryEntry = $null
+        
+        $searcher = New-Object System.DirectoryServices.DirectorySearcher
 
         if ($GlobalCatalog)
         {
@@ -349,10 +351,9 @@ Function GetObjectsFromAD ($domain, $filter, [switch] $GlobalCatalog)
         else
         {
             $domainDirectoryEntry = New-Object System.DirectoryServices.DirectoryEntry "LDAP://$domainDistinguishedName"
+            $searcher.SearchRoot =  $domainDirectoryEntry
         }
 
-        $searcher = New-Object System.DirectoryServices.DirectorySearcher
-        $searcher.SearchRoot =  $domainDirectoryEntry
         $searcher.SearchScope = "SubTree"
         $props = $searcher.PropertiestoLoad.Add("distinguishedName")
         $props = $searcher.PropertiestoLoad.Add("objectGuid")
@@ -374,6 +375,42 @@ Function GetObjectsFromAD ($domain, $filter, [switch] $GlobalCatalog)
         ObjectDispose $searcher
         ObjectDispose $searchResults
     }
+}
+
+function TryGetDomainNameFromUpn ($Upn)
+{
+    $serviceAccountPartsUpn = $Upn.Split('@')
+    $serviceAccountDomain = $serviceAccountPartsUpn[1]
+    $serviceSamAccountName = $serviceAccountPartsUpn[0]
+
+    $localSystemDomainName = (Get-WmiObject Win32_ComputerSystem).Domain
+
+    # If UPN domain matches local domain then we know this is the correct domain and return
+    if ($serviceAccountDomain -like $localSystemDomainName)
+    {
+        return $serviceAccountDomain
+    }
+
+    # Try to find user forest by querying the GC
+    $foundUser = GetObjectsFromAD -domain $localSystemDomainName -filter "(&(samAccountName=$serviceSamAccountName)(userPrincipalName=$Upn))" -GlobalCatalog
+    if ($foundUser)
+    {
+        return GetDomainNameFromDistinguishedName $foundUser.Properties.distinguishedname
+    }
+        
+    return $null
+}
+
+Function GetDomainNameFromDistinguishedName ([string]$dn)
+{
+    $location = $dn.IndexOf("DC=")
+
+    $domainName = $dn.Substring($location, $dn.Length - $location)
+
+    $domainName = $domainName.Replace(",DC=",".")
+    $domainName = $domainName.Trim("DC=")
+
+    return $domainName
 }
 
 Function Get-FirstEnabledWIAEndpointUri()

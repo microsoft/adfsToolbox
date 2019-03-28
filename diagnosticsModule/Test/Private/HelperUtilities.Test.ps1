@@ -366,6 +366,92 @@ InModuleScope ADFSDiagnosticsModule {
         }
     }
 
+    Describe "GetDomainNameFromDistinguishedName" {
+        BeforeAll {
+            $_shortDistinguishedName = "DC=contoso,DC=com"
+            $_shortDomainName = "contoso.com"
+            $_longDistinguishedName = "DC=test,DC=child,DC=corp,DC=contoso,DC=com"
+            $_longDomainName = "test.child.corp.contoso.com"
+            $_objectDistinguishedName = "CN=Employee One,OU=Users,DC=test,DC=child,DC=corp,DC=contoso,DC=com"
+        }
+
+        it "Should return $_shortDomainName" {
+            GetDomainNameFromDistinguishedName $_shortDistinguishedName | should beexactly $_shortDomainName
+        }
+
+        it "Should return $_longDomainName" {
+            GetDomainNameFromDistinguishedName $_longDistinguishedName | should beexactly $_longDomainName
+        }
+        
+        it "Should return $_longDomainName" {
+            GetDomainNameFromDistinguishedName $_objectDistinguishedName | should beexactly $_longDomainName
+        }
+    }
+
+    Describe "TryGetDomainNameFromUpn" {        
+        BeforeAll {
+            $_upn = "adfssrv@contoso.com"
+            $_domainName = "contoso.com"
+            $_childDomainName = "test.contoso.com"
+            $_rootDomainName = "contoso.local"
+            $_localDistinguishedName = "DC=contoso,DC=local"
+            $_childDistinguishedName = "DC=test,DC=contoso,DC=com"
+            
+            $_mockAdUserLocalDomainObject = New-Object psobject
+            $_mockAdUserLocalDomainObject | Add-Member "Properties" @{ "distinguishedname"=$_localDistinguishedName };
+
+            $_mockAdUserForestDomainObject = New-Object psobject
+            $_mockAdUserForestDomainObject | Add-Member "Properties" @{ "distinguishedname"=$_childDistinguishedName };
+        }
+
+        It "Should return $_domainName, UPN domain name same as local should return domain name from UPN" {
+            # Arrange
+            Mock -CommandName Get-WmiObject { return @{"Domain"=$_domainName} } 
+        
+            # Act
+            $ret = TryGetDomainNameFromUpn $_upn
+
+            # Assert
+            $ret | should beexactly $_domainName
+        }
+
+        It "Should return $_childDomainName, UPN domain different than computer domain but account found in computer domain" {
+            # Arrange
+            Mock -CommandName Get-WmiObject { return @{"Domain"=$_childDomainName} }  
+            Mock -CommandName GetObjectsFromAD { return $_mockAdUserForestDomainObject }
+
+            # Act            
+            $ret = TryGetDomainNameFromUpn $_upn
+
+            # Assert
+            $ret | should beexactly $_childDomainName
+        }
+
+        It "Should return $_rootDomainName, UPN domain name different than computer domain, account found in root domain GC" {
+            # Arrange
+            Mock -CommandName Get-WmiObject { return @{"Domain"=$_childDomainName} } 
+            Mock -CommandName GetObjectsFromAD { return $_mockAdUserLocalDomainObject } 
+
+            # Act            
+            $ret = TryGetDomainNameFromUpn $_upn
+
+            # Assert
+            $ret | should beexactly $_rootDomainName
+        }
+
+        It "Should return null, UPN not found in forest" {
+            # Arrange
+            Mock -CommandName Get-WmiObject { return @{"Domain"=$_childDomainName} }  
+            Mock -CommandName GetObjectsFromAD { return $false } 
+
+            # Act            
+            $ret = TryGetDomainNameFromUpn $_upn
+
+            # Assert
+            $ret | should beexactly $null
+        }
+    }
+
     Describe "CheckRegistryKeyExist" {
         It "should return true" {
             # Arrange
