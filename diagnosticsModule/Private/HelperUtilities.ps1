@@ -558,7 +558,7 @@ Function IsUserPrincipalNameFormat
         return $false;
     }
 
-    return $toValidate -Match $EmailAddressRegex;
+    return $toValidate.Contains('@');
 }
 
 Function CheckRegistryKeyExist($key)

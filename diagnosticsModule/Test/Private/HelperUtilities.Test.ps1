@@ -364,6 +364,72 @@ InModuleScope ADFSDiagnosticsModule {
             # Assert
             $ret | should beexactly $false
         }
+
+        It "should return true even if username has '$' in it" {
+            # Arrange
+            $username = 'test$name@test.contoso.com'
+
+            # Act
+            $ret = IsUserPrincipalNameFormat($username)
+
+            # Assert
+            $ret | should beexactly $true
+        }
+
+        It "should return true even if username has '-' in it" {
+            # Arrange
+            $username = 'test-name@test.contoso.com'
+
+            # Act
+            $ret = IsUserPrincipalNameFormat($username)
+            
+            # Assert
+            $ret | should beexactly $true
+        }
+
+        It "should return true even if username has '_' in it" {
+            # Arrange
+            $username = 'test_name@test.contoso.com'
+
+            # Act
+            $ret = IsUserPrincipalNameFormat($username)
+            
+            # Assert
+            $ret | should beexactly $true
+        }
+        
+        It "should return true even if username starts with an '_'" {
+            # Arrange
+            $username = '_testname@test.contoso.com'
+
+            # Act
+            $ret = IsUserPrincipalNameFormat($username)
+            
+            # Assert
+            $ret | should beexactly $true
+        }
+        
+        It "should return true even if username starts with an '-'" {
+            # Arrange
+            $username = '-testname@test.contoso.com'
+
+            # Act
+            $ret = IsUserPrincipalNameFormat($username)
+            
+            # Assert
+            $ret | should beexactly $true
+        }
+
+        It "should return true even if username starts with a '$'" {
+            # Arrange
+            $username = '$testname@test.contoso.com'
+
+            # Act
+            $ret = IsUserPrincipalNameFormat($username)
+
+            # Assert
+            $ret | should beexactly $true
+        }
     }
 
     Describe "GetDomainNameFromDistinguishedName" {
