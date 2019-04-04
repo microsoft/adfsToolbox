@@ -352,6 +352,10 @@ Function TestADFSDuplicateSPN
             $testResult.Detail = "AD FS service is not running";
             return $testResult;
         }
+        
+        # Get Farm Name from adfsproperties and use that to determin SPN format
+        $farmName = (Retrieve-AdfsProperties).HostName
+        $farmSPN = "host/" + $farmName
 
         #Search both the service account and the holder of the SPN in the directory
         $adfsServiceAccount = (Get-WmiObject win32_service | Where-Object {$_.name -eq "adfssrv"}).StartName
@@ -366,7 +370,10 @@ Function TestADFSDuplicateSPN
             $serviceAccountPartsUpn = $adfsServiceAccount.Split('@')
             if ($serviceAccountPartsUpn.Length -ne 2)
             {
-                throw "Unexpected value of the service account $adfsServiceAccount. Expected in UPN:User@Domain format"
+                $testResult.Result = [ResultType]::Fail;
+                $testResult.Detail = "Unexpected value for the service account $adfsServiceAccount. Expected in UPN:User@Domain format";
+                $testResult.Output = @{"FarmName" = $farmName; $serviceAccountKey = $adfsServiceAccount; $farmSPNKey = $farmSPN}
+                return $testResult;
             }
 
             $serviceSamAccountName = $serviceAccountPartsUpn[0]
@@ -379,26 +386,44 @@ Function TestADFSDuplicateSPN
             {
                 $testResult.Result = [ResultType]::NotRun;
                 $testResult.Detail = "Unable to find user object in AD for the service account $adfsServiceAccount.";
+                $testResult.Output = @{"FarmName" = $farmName; $serviceAccountKey = $adfsServiceAccount; $farmSPNKey = $farmSPN}
                 return $testResult;
             }
+        }
+        elseif ($adfsServiceAccount.Contains("LocalSystem"))
+        {
+            $serviceAccountDomain = (Get-WmiObject Win32_ComputerSystem).Domain
+            $serviceSamAccountName = (Get-WmiObject Win32_ComputerSystem).Name + '$'
         }
         else
         {
             $serviceAccountParts = $adfsServiceAccount.Split('\\')
             if ($serviceAccountParts.Length -ne 2)
             {
-                throw "Unexpected value of the service account $adfsServiceAccount. Expected in DOMAIN\\User"
+                $testResult.Result = [ResultType]::Fail;
+                $testResult.Detail = "Unexpected value for the service account $adfsServiceAccount. Expected in DOMAIN\\User";
+                $testResult.Output = @{"FarmName" = $farmName; $serviceAccountKey = $adfsServiceAccount; $farmSPNKey = $farmSPN}
+                return $testResult;
             }
             $serviceAccountDomain = $serviceAccountParts[0]
             $serviceSamAccountName = $serviceAccountParts[1]
         }
 
-        # Get Farm Name from adfsproperties and use that to determin SPN format
-        $farmName = (Retrieve-AdfsProperties).HostName
-        $farmSPN = "host/" + $farmName
+        try {            
+            $spnResults = GetObjectsFromAD -domain $serviceAccountDomain -filter "(servicePrincipalName=$farmSPN)" -GlobalCatalog
+            $svcAcctSearcherResults = GetObjectsFromAD -domain $serviceAccountDomain -filter "(samAccountName=$serviceSamAccountName)"
+        }
+        catch {
+            $testResult.Result = [ResultType]::Fail
+            $testResult.Detail = "Failed to lookup objects in Active Directory" + 
+                [System.Environment]::NewLine + "AD FS Service Account: " + $adfsServiceAccount
+                [System.Environment]::NewLine + "Domain Name:           " + $serviceAccountDomain
+                [System.Environment]::NewLine + "Exception Message:     " + $_.Exception.Message
 
-        $spnResults = GetObjectsFromAD -domain $serviceAccountDomain -filter "(servicePrincipalName=$farmSPN)" -GlobalCatalog
-        $svcAcctSearcherResults = GetObjectsFromAD -domain $serviceAccountDomain -filter "(samAccountName=$serviceSamAccountName)"
+            $testResult.Output = @{$farmSPNKey = $farmSPN; $serviceAccountKey = $adfsServiceAccount; "Domain" = $serviceAccountDomain; "User" = $serviceSamAccountName}
+
+            return $testResult
+        }
 
         #root cause: no SPN at all
         if (($spnResults -eq $null) -or ($spnResults.Count -eq 0))
@@ -1048,6 +1073,9 @@ Function TestAdfsPatches
 Function TestServicePrincipalName
 {
     $testName = "TestServicePrincipalName";
+    $serviceAccountKey = "AdfsServiceAccount"
+    $farmNameKey = "FarmName"
+    
     Out-Verbose "Checking service principal name."
 
     if (Test-RunningOnAdfsSecondaryServer)
@@ -1079,13 +1107,18 @@ Function TestServicePrincipalName
             throw "ADFS Service account is null or empty. The WMI configuration is in an inconsistent state";
         }
 
+        $farmName = (Retrieve-AdfsProperties).HostName;
+
         Out-Verbose "Checking format of ADFS service account. $adfsServiceAccount";
         if (IsUserPrincipalNameFormat($adfsServiceAccount))
         {
             $serviceAccountPartsUpn = $adfsServiceAccount.Split('@')
             if ($serviceAccountPartsUpn.Length -ne 2)
             {
-                throw "Unexpected value of the service account $adfsServiceAccount. Expected in DOMAIN\\User format or UPN:User@Domain"
+                $testResult.Result = [ResultType]::Fail;
+                $testResult.Detail = "Unexpected value for the service account $adfsServiceAccount. Expected in UPN:User@Domain format";
+                $testResult.Output = @{$farmNameKey = $farmName; $serviceAccountKey = $adfsServiceAccount}
+                return $testResult;
             }
 
             $serviceSamAccountName = $serviceAccountPartsUpn[0]
@@ -1098,6 +1131,7 @@ Function TestServicePrincipalName
             {
                 $testResult.Result = [ResultType]::NotRun;
                 $testResult.Detail = "Unable to find user object in AD for the service account $adfsServiceAccount.";
+                $testResult.Output = @{$farmNameKey = $farmName; $serviceAccountKey = $adfsServiceAccount}
                 return $testResult;
             }
         }
@@ -1105,8 +1139,11 @@ Function TestServicePrincipalName
         {
             $serviceAccountParts = $adfsServiceAccount.Split('\\')
             if ($serviceAccountParts.Length -ne 2)
-            {
-                throw "Unexpected value of the service account $adfsServiceAccount. Expected in DOMAIN\\User format or UPN:User@Domain"
+            {                
+                $testResult.Result = [ResultType]::Fail;
+                $testResult.Detail = "Unexpected value for the service account $adfsServiceAccount. Expected in DOMAIN\\User";
+                $testResult.Output = @{$farmNameKey = $farmName; $serviceAccountKey = $adfsServiceAccount}
+                return $testResult;
             }
             $serviceAccountDomain = $serviceAccountParts[0]
             $serviceSamAccountName = $serviceAccountParts[1]
@@ -1117,8 +1154,6 @@ Function TestServicePrincipalName
         $svcAccountSearchResults = GetObjectsFromAD -domain $serviceAccountDomain -filter "(samAccountName=$serviceSamAccountName)";
         $ldapPath = $svcAccountSearchResults.Path -Replace "^LDAP://", "";
         Out-Verbose "Service account LDAP path = $ldapPath";
-
-        $farmName = (Retrieve-AdfsProperties).HostName;
 
         Out-Verbose "Checking existence of HOST SPN";
         $ret = Invoke-Expression "setspn -f -q HOST/$farmName";

@@ -209,6 +209,18 @@ InModuleScope ADFSDiagnosticsModule {
                 $ret.Result | should beexactly Fail
                 $ret.Detail | should beexactly "An existing SPN was found for HTTP/$_hostname but it did not resolve to the ADFS service account."
             }
+
+            It "when service account is not in expected SAM format" {
+                # Arrange
+                Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{"Name" = $adfsServiceName; "StartName" = "badAccount"}}
+
+                # Act
+                $ret = TestServicePrincipalName
+
+                # Assert
+                $ret.Result | should beexactly Fail
+                $ret.Detail | should beexactly "Unexpected value for the service account badAccount. Expected in DOMAIN\\User"                
+            }
         }
 
         Context "should not run" {
@@ -270,19 +282,6 @@ InModuleScope ADFSDiagnosticsModule {
                 $ret.Result | should beexactly Error
                 $ret.ExceptionMessage | should beexactly "ADFS Service account is null or empty. The WMI configuration is in an inconsistent state"
                 $ret.Exception | should beexactly "System.Management.Automation.RuntimeException: ADFS Service account is null or empty. The WMI configuration is in an inconsistent state"
-            }
-
-            It "when service account is not in expected SAM format" {
-                # Arrange
-                Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{"Name" = $adfsServiceName; "StartName" = "badAccount"}}
-
-                # Act
-                $ret = TestServicePrincipalName
-
-                # Assert
-                $ret.Result | should beexactly Error
-                $ret.ExceptionMessage | should beexactly "Unexpected value of the service account badAccount. Expected in DOMAIN\\User format or UPN:User@Domain"
-                $ret.Exception | should beexactly "System.Management.Automation.RuntimeException: Unexpected value of the service account badAccount. Expected in DOMAIN\\User format or UPN:User@Domain"
             }
         }
     }
