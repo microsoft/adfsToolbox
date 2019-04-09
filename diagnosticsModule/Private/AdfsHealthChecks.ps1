@@ -325,9 +325,19 @@ Function TestADFSDuplicateSPN
     $testName = "CheckDuplicateSPN"
     $farmSPNKey = "ADFSFarmSPN"
     $serviceAccountKey = "ServiceAccount"
+    $serviceAccountFormattedKey = "ServiceAccountFormatted"
     $spnObjKey = "SpnObjects"
     try
     {
+        $isAdfsServiceRunning = IsAdfsServiceRunning
+        if ($isAdfsServiceRunning -eq $false)
+        {
+            $testResult = New-Object TestResult -ArgumentList ($testName)
+            $testResult.Result = [ResultType]::NotRun;
+            $testResult.Detail = "AD FS service is not running";
+            return $testResult;
+        }
+        
         if (Test-RunningOnAdfsSecondaryServer)
         {
             return Create-NotRunOnSecondaryTestResult $testName
@@ -344,20 +354,11 @@ Function TestADFSDuplicateSPN
             return $testResult
         }
 
-        $isAdfsServiceRunning = IsAdfsServiceRunning
-
-        if ($isAdfsServiceRunning -eq $false)
-        {
-            $testResult.Result = [ResultType]::NotRun;
-            $testResult.Detail = "AD FS service is not running";
-            return $testResult;
-        }
-        
         # Get Farm Name from adfsproperties and use that to determin SPN format
         $farmName = (Retrieve-AdfsProperties).HostName
         $farmSPN = "host/" + $farmName
 
-        #Search both the service account and the holder of the SPN in the directory
+        # Search both the service account and the holder of the SPN in the directory
         $adfsServiceAccount = (Get-WmiObject win32_service | Where-Object {$_.name -eq "adfssrv"}).StartName
         if ([String]::IsNullOrWhiteSpace($adfsServiceAccount))
         {
@@ -368,7 +369,7 @@ Function TestADFSDuplicateSPN
         if (IsUserPrincipalNameFormat($adfsServiceAccount))
         {
             $serviceAccountPartsUpn = $adfsServiceAccount.Split('@')
-            if ($serviceAccountPartsUpn.Length -ne 2)
+            if (($serviceAccountPartsUpn.Length -ne 2) -or (NullOrWhitespaceStringInArray($serviceAccountPartsUpn)))
             {
                 $testResult.Result = [ResultType]::Fail;
                 $testResult.Detail = "Unexpected value for the service account $adfsServiceAccount. Expected in UPN:User@Domain format";
@@ -380,7 +381,7 @@ Function TestADFSDuplicateSPN
             $serviceAccountDomain = TryGetDomainNameFromUpn $adfsServiceAccount
             if ($serviceAccountDomain)
             {
-                $adfsServiceAccount = "$serviceAccountDomain\$serviceSamAccountName"
+                $adfsServiceAccountFormatted = "$serviceAccountDomain\$serviceSamAccountName"
             }
             else
             {
@@ -390,19 +391,20 @@ Function TestADFSDuplicateSPN
                 return $testResult;
             }
         }
-        elseif ($adfsServiceAccount.Contains("LocalSystem"))
+        elseif ($adfsServiceAccount -ieq "LocalSystem" -or $adfsServiceAccount -ieq "NT AUTHORITY\NETWORK SERVICE")
         {
             $serviceAccountDomain = (Get-WmiObject Win32_ComputerSystem).Domain
             $serviceSamAccountName = (Get-WmiObject Win32_ComputerSystem).Name + '$'
-        }
+            $adfsServiceAccountFormatted = "$serviceAccountDomain\$serviceSamAccountName"
+        }        
         else
         {
             $serviceAccountParts = $adfsServiceAccount.Split('\\')
-            if ($serviceAccountParts.Length -ne 2)
+            if (($serviceAccountParts.Length -ne 2) -or (NullOrWhitespaceStringInArray($serviceAccountParts)))
             {
                 $testResult.Result = [ResultType]::Fail;
                 $testResult.Detail = "Unexpected value for the service account $adfsServiceAccount. Expected in DOMAIN\\User";
-                $testResult.Output = @{"FarmName" = $farmName; $serviceAccountKey = $adfsServiceAccount; $farmSPNKey = $farmSPN}
+                $testResult.Output = @{"FarmName" = $farmName; $serviceAccountKey = $adfsServiceAccount; $farmSPNKey = $farmSPN; $serviceAccountFormattedKey = $adfsServiceAccountFormatted }
                 return $testResult;
             }
             $serviceAccountDomain = $serviceAccountParts[0]
@@ -416,11 +418,11 @@ Function TestADFSDuplicateSPN
         catch {
             $testResult.Result = [ResultType]::Fail
             $testResult.Detail = "Failed to lookup objects in Active Directory" + 
-                [System.Environment]::NewLine + "AD FS Service Account: " + $adfsServiceAccount
-                [System.Environment]::NewLine + "Domain Name:           " + $serviceAccountDomain
+                [System.Environment]::NewLine + "AD FS Service Account: " + $adfsServiceAccount +
+                [System.Environment]::NewLine + "Domain Name:           " + $serviceAccountDomain +
                 [System.Environment]::NewLine + "Exception Message:     " + $_.Exception.Message
 
-            $testResult.Output = @{$farmSPNKey = $farmSPN; $serviceAccountKey = $adfsServiceAccount; "Domain" = $serviceAccountDomain; "User" = $serviceSamAccountName}
+            $testResult.Output = @{$farmSPNKey = $farmSPN; $serviceAccountKey = $adfsServiceAccount; $serviceAccountFormattedKey = $adfsServiceAccountFormatted; "Domain" = $serviceAccountDomain; "User" = $serviceSamAccountName}
 
             return $testResult
         }
@@ -430,7 +432,7 @@ Function TestADFSDuplicateSPN
         {
             $testResult.Result = [ResultType]::Fail
             $testResult.Detail = "No objects in the directory with SPN $farmSPN are found." + [System.Environment]::NewLine + "AD FS Service Account: " + $adfsServiceAccount
-            $testResult.Output = @{$farmSPNKey = $farmSPN; $serviceAccountKey = $adfsServiceAccount; $spnObjKey = "NONE"}
+            $testResult.Output = @{$farmSPNKey = $farmSPN; $serviceAccountKey = $adfsServiceAccount; $serviceAccountFormattedKey = $adfsServiceAccountFormatted; $spnObjKey = "NONE"}
 
             return $testResult
         }
@@ -440,7 +442,7 @@ Function TestADFSDuplicateSPN
         {
             $testResult.Result = [ResultType]::Fail
             $testResult.Detail = "Did not find the service account $adfsServiceAccount in the directory"
-            $testResult.Output = @{$farmSPNKey = $farmSPN; $serviceAccountKey = $adfsServiceAccount; $spnObjKey = $spnResults[0].Properties.distinguishedname}
+            $testResult.Output = @{$farmSPNKey = $farmSPN; $serviceAccountKey = $adfsServiceAccount; $serviceAccountFormattedKey = $adfsServiceAccountFormatted; $spnObjKey = $spnResults[0].Properties.distinguishedname}
             return $testResult
         }
 
@@ -448,7 +450,7 @@ Function TestADFSDuplicateSPN
         {
             $testResult.Result = [ResultType]::Fail
             $testResult.Detail = = [String]::Format("Did not find 1 result for the service account in the directory. Found={0}", $svcAcctSearcherResults.Count)
-            $testResult.Output = @{$farmSPNKey = $farmSPN; $serviceAccountKey = $adfsServiceAccount; $spnObjKey = $spnResults[0].Properties.distinguishedname}
+            $testResult.Output = @{$farmSPNKey = $farmSPN; $serviceAccountKey = $adfsServiceAccount; $serviceAccountFormattedKey = $adfsServiceAccountFormatted; $spnObjKey = $spnResults[0].Properties.distinguishedname}
             return $testResult
         }
 
@@ -469,7 +471,7 @@ Function TestADFSDuplicateSPN
 
             $testResult.Result = [ResultType]::Fail
             $testResult.Detail = $testDetail
-            $testResult.Output = @{$farmSPNKey = $farmSPN; $serviceAccountKey = $adfsServiceAccount; $spnObjKey = $spnObjects}
+            $testResult.Output = @{$farmSPNKey = $farmSPN; $serviceAccountKey = $adfsServiceAccount; $serviceAccountFormattedKey = $adfsServiceAccountFormatted; $spnObjKey = $spnObjects}
 
             return $testResult
         }
@@ -487,14 +489,14 @@ Function TestADFSDuplicateSPN
             {
                 $testResult.Result = [ResultType]::Pass
                 $testResult.Detail = "Found SPN in object: " + $spnDistinguishedName
-                $testResult.Output = @{$farmSPNKey = $farmSPN; $serviceAccountKey = $adfsServiceAccount; $spnObjKey = $spnResults[0].Properties.distinguishedname}
+                $testResult.Output = @{$farmSPNKey = $farmSPN; $serviceAccountKey = $adfsServiceAccount; $serviceAccountFormattedKey = $adfsServiceAccountFormatted; $spnObjKey = $spnResults[0].Properties.distinguishedname}
                 return $testResult
             }
             else
             {
                 $testResult.Result = [ResultType]::Fail
                 $testResult.Detail = "Found SPN in object: " + $spnDistinguishedName + " but it does not correspond to service account " + $svcAccountDistinguishedName
-                $testResult.Output = @{$farmSPNKey = $farmSPN; $serviceAccountKey = $adfsServiceAccount; $spnObjKey = $spnResults[0].Properties.distinguishedname}
+                $testResult.Output = @{$farmSPNKey = $farmSPN; $serviceAccountKey = $adfsServiceAccount; $serviceAccountFormattedKey = $adfsServiceAccountFormatted; $spnObjKey = $spnResults[0].Properties.distinguishedname}
                 return $testResult
             }
         }

@@ -798,3 +798,8 @@ function IsExecutedByConnectHealth {
 
     return $true
 }
+
+function NullOrWhitespaceStringInArray($array)
+{
+    return (@($array | Where-Object { [string]::IsNullOrWhitespace($_) })).Count -ne 0
+}
