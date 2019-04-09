@@ -801,11 +801,5 @@ function IsExecutedByConnectHealth {
 
 function NullOrWhitespaceStringInArray($array)
 {
-    $EmptyElements = @($array | Where-Object { [string]::IsNullOrWhitespace($_) })
-    if ($EmptyElements.Count -eq 0)
-    {
-        return $false;
-    }
-    
-    return $true;
+    return (@($array | Where-Object { [string]::IsNullOrWhitespace($_) })).Count -ne 0
 }
