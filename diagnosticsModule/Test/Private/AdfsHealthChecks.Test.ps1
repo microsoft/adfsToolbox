@@ -111,6 +111,8 @@ InModuleScope ADFSDiagnosticsModule {
             $_samServiceAccount = "contoso\aadcsvc"
             $_localSystemAccount = "LocalSystem"
             $_networkServiceAccount = "NT AUTHORITY\NETWORK SERVICE"
+            $_upperCaseLocalSystem = "LOCALSYSTEM"
+            $_lowerCaseNetworkService = "NT Authority\Network Service"
             $_path = "CN=aadcsvc,CN=Managed Service Accounts,DC=contoso,DC=com"
             $_fullPath = "LDAP://$_path"
             $_incorrectLdapPath = "LDAP://CN=badAccount,CN=Managed Service Accounts,DC=contoso,DC=com"
@@ -169,6 +171,19 @@ InModuleScope ADFSDiagnosticsModule {
                 $ret.output.ServiceAccountFormatted | should beexactly 'contoso.com\adfssrv$'
             }
             
+            It "should pass when service account is LOCALSYSTEM" {
+                # Arrange
+                Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_upperCaseLocalSystem; "Name" = $adfsServiceName; "Domain" = $_domainName} } 
+                
+                # Act
+                $ret = TestADFSDuplicateSPN
+
+                # Assert
+                $ret.Result | should -BeExactly Pass
+                $ret.output.ServiceAccount | should -BeExactly $_upperCaseLocalSystem
+                $ret.output.ServiceAccountFormatted | should -BeExactly 'contoso.com\adfssrv$'
+            }
+            
             It "should pass when service account is NT AUTHORITY\NETWORK SERVICE" {
                 # Arrange
                 Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_networkServiceAccount; "Name" = $adfsServiceName; "Domain" = $_domainName} } 
@@ -180,8 +195,21 @@ InModuleScope ADFSDiagnosticsModule {
                 $ret.Result | should beexactly Pass
                 $ret.output.ServiceAccount | should beexactly $_networkServiceAccount
                 $ret.output.ServiceAccountFormatted | should beexactly 'contoso.com\adfssrv$'
+            }     
+            
+            It "should pass when service account is NT Authority\Network Service" {
+                # Arrange
+                Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_lowerCaseNetworkService; "Name" = $adfsServiceName; "Domain" = $_domainName} } 
+                
+                # Act
+                $ret = TestADFSDuplicateSPN
+
+                # Assert
+                $ret.Result | should beexactly Pass
+                $ret.output.ServiceAccount | should beexactly $_lowerCaseNetworkService
+                $ret.output.ServiceAccountFormatted | should beexactly 'contoso.com\adfssrv$'
             }
-        }
+        }   
 
         Context "should fail" {
             BeforeAll {

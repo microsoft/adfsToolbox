@@ -391,7 +391,7 @@ Function TestADFSDuplicateSPN
                 return $testResult;
             }
         }
-        elseif ($adfsServiceAccount.Contains("LocalSystem") -or $adfsServiceAccount.Contains("NT AUTHORITY\NETWORK SERVICE"))
+        elseif ($adfsServiceAccount -ieq "LocalSystem" -or $adfsServiceAccount -ieq "NT AUTHORITY\NETWORK SERVICE")
         {
             $serviceAccountDomain = (Get-WmiObject Win32_ComputerSystem).Domain
             $serviceSamAccountName = (Get-WmiObject Win32_ComputerSystem).Name + '$'
