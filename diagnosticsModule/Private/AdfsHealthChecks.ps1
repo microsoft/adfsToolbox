@@ -412,7 +412,11 @@ Function TestADFSDuplicateSPN
         }
 
         try {            
-            $spnResults = GetObjectsFromAD -domain $serviceAccountDomain -filter "(servicePrincipalName=$farmSPN)" -GlobalCatalog
+            $spnResults = GetObjectsFromAD -domain $serviceAccountDomain -filter "(servicePrincipalName=$farmSPN)" 
+            if (($spnResults -eq $null) -or ($spnResults.Count -eq 0))
+            {
+                $spnResults = GetObjectsFromAD -domain $serviceAccountDomain -filter "(servicePrincipalName=$farmSPN)" -GlobalCatalog
+            }
             $svcAcctSearcherResults = GetObjectsFromAD -domain $serviceAccountDomain -filter "(samAccountName=$serviceSamAccountName)"
         }
         catch {
@@ -430,11 +434,42 @@ Function TestADFSDuplicateSPN
         #root cause: no SPN at all
         if (($spnResults -eq $null) -or ($spnResults.Count -eq 0))
         {
-            $testResult.Result = [ResultType]::Fail
-            $testResult.Detail = "No objects in the directory with SPN $farmSPN are found." + [System.Environment]::NewLine + "AD FS Service Account: " + $adfsServiceAccount
-            $testResult.Output = @{$farmSPNKey = $farmSPN; $serviceAccountKey = $adfsServiceAccount; $serviceAccountFormattedKey = $adfsServiceAccountFormatted; $spnObjKey = "NONE"}
+            if (($svcAcctSearcherResults -ne $null) -and ($svcAcctSearcherResults.Count -ne 0))
+            {
+                if ($svcAcctSearcherResults.Properties.serviceprincipalname -ne $farmSPN)
+                {
+                    $testResult.Result = [ResultType]::Fail
+                    $testResult.Detail = "No objects in the directory with SPN $farmSPN were found." + [System.Environment]::NewLine + "AD FS Service Account: " + $adfsServiceAccount
+                    $testResult.Output = @{
+                        "ServiceAccountName" = $serviceSamAccountName;
+                        "ServiceAccountDomain" = $serviceAccountDomain;
+                        $serviceAccountKey = $adfsServiceAccount;
+                        $serviceAccountFormattedKey = $adfsServiceAccountFormatted;                         
+                        "ServiceAccountFoundInAD" = $svcAcctSearcherResults.Properties.distinguishedname; 
+                        "ServiceAccountSpn" = $svcAcctSearcherResults.Properties.serviceprincipalname;
+                        $farmSPNKey = $farmSPN; 
+                        $spnObjKey = "NONE";
+                    }
+                    return $testResult
+                }
 
-            return $testResult
+                $spnResults = $svcAcctSearcherResults;
+            }
+            else
+            {
+                $testResult.Result = [ResultType]::Fail
+                $testResult.Detail = "No objects in the directory with SPN $farmSPN were found." + [System.Environment]::NewLine + "AD FS Service Account: " + $adfsServiceAccount
+                $testResult.Output = @{
+                    "ServiceAccountName" = $serviceSamAccountName;
+                    "ServiceAccountDomain" = $serviceAccountDomain;
+                    $serviceAccountKey = $adfsServiceAccount;
+                    $serviceAccountFormattedKey = $adfsServiceAccountFormatted;                         
+                    "ServiceAccountFoundInAD" = $svcAcctSearcherResults.Count; 
+                    $farmSPNKey = $farmSPN; 
+                    $spnObjKey = "NONE";
+                }
+                return $testResult
+            }            
         }
 
         #root cause: Could not find the service account. This should be very rare

@@ -121,7 +121,8 @@ InModuleScope ADFSDiagnosticsModule {
             $_computerName = "sts1"
             $_objectGUID = @("aaf0ee7c-a470-4b85-a45b-86effeee0e02")
             $_item = New-Object PSObject -Property @{ "Item" = $_objectGUID }
-            $_adObject = New-Object PSObject -Property @{ "distinguishedname" = $_fullPath; "objectguid" = $_objectGUID }
+            $_farmSPN = "host/" + $_hostname
+            $_adObject = New-Object PSObject -Property @{ "distinguishedname" = $_fullPath; "objectguid" = $_objectGUID; "serviceprincipalname" = $_farmSPN }
         }
 
         Context "should pass" {
@@ -160,7 +161,7 @@ InModuleScope ADFSDiagnosticsModule {
             
             It "should pass when service account is LocalSystem" {
                 # Arrange
-                Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_localSystemAccount; "Name" = $adfsServiceName; "Domain" = $_domainName} } 
+                Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_localSystemAccount; "Name" = $adfsServiceName; "Domain" = $_domainName} }
                 
                 # Act
                 $ret = TestADFSDuplicateSPN
@@ -173,7 +174,7 @@ InModuleScope ADFSDiagnosticsModule {
             
             It "should pass when service account is LOCALSYSTEM" {
                 # Arrange
-                Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_upperCaseLocalSystem; "Name" = $adfsServiceName; "Domain" = $_domainName} } 
+                Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_upperCaseLocalSystem; "Name" = $adfsServiceName; "Domain" = $_domainName} }
                 
                 # Act
                 $ret = TestADFSDuplicateSPN
@@ -186,7 +187,7 @@ InModuleScope ADFSDiagnosticsModule {
             
             It "should pass when service account is NT AUTHORITY\NETWORK SERVICE" {
                 # Arrange
-                Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_networkServiceAccount; "Name" = $adfsServiceName; "Domain" = $_domainName} } 
+                Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_networkServiceAccount; "Name" = $adfsServiceName; "Domain" = $_domainName} }
                 
                 # Act
                 $ret = TestADFSDuplicateSPN
@@ -199,7 +200,7 @@ InModuleScope ADFSDiagnosticsModule {
             
             It "should pass when service account is NT Authority\Network Service" {
                 # Arrange
-                Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_lowerCaseNetworkService; "Name" = $adfsServiceName; "Domain" = $_domainName} } 
+                Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_lowerCaseNetworkService; "Name" = $adfsServiceName; "Domain" = $_domainName} }
                 
                 # Act
                 $ret = TestADFSDuplicateSPN
@@ -208,6 +209,20 @@ InModuleScope ADFSDiagnosticsModule {
                 $ret.Result | should beexactly Pass
                 $ret.output.ServiceAccount | should beexactly $_lowerCaseNetworkService
                 $ret.output.ServiceAccountFormatted | should beexactly 'contoso.com\adfssrv$'
+            }
+
+            It "should pass even if SPN was not found in AD but user object was" {
+                # Arrange 
+                Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_samServiceAccount; "Name" = $adfsServiceName } }
+                Mock -CommandName GetObjectsFromAD -MockWith { return $null } -ParameterFilter { $filter -eq "(servicePrincipalName=$_farmSPN)" }                
+                Mock -CommandName GetObjectsFromAD -MockWith { return New-Object PSObject -Property @{ "Properties" = $_adObject; "Count" = 1 } } -ParameterFilter { $filter -eq "(samAccountName=aadcsvc)"}
+
+                # Act
+                $ret = TestADFSDuplicateSPN
+
+                # Assert
+                $ret.Result | should -beexactly Pass
+                $ret.output.ServiceAccount | should beexactly $_samServiceAccount        
             }
         }   
 
@@ -249,7 +264,7 @@ InModuleScope ADFSDiagnosticsModule {
             }
 
             It "should fail with account not found in AD" {
-                # Arrange "aadcsvc@contoso.com"
+                # Arrange
                 Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_samServiceAccount; "Name" = $adfsServiceName } }
                 Mock -CommandName GetObjectsFromAD -MockWith { throw "The specified domain does not exist or cannot be contacted." }
 
@@ -262,29 +277,65 @@ InModuleScope ADFSDiagnosticsModule {
                 $ret.output.ServiceAccount | should beexactly $_samServiceAccount
             }
 
-            Context "should notrun"{                
-                BeforeAll {
-                    Mock -CommandName Test-RunningOnAdfsSecondaryServer -MockWith { return $false }
-                    Mock -CommandName IsLocalUser -MockWith { return $false }
-                    Mock -CommandName IsAdfsServiceRunning -MockWith { return $true }
-                    Mock -CommandName Retrieve-AdfsProperties -MockWith { return New-Object PSObject -Property @{ "Hostname" = $_hostname}}
-                }
+            It "should fail with no Objects found in Directory when none were returned from AD" {
+                # Arrange 
+                Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_samServiceAccount; "Name" = $adfsServiceName } }
+                Mock -CommandName GetObjectsFromAD -MockWith { return $null }
+                # Act
+                $ret = TestADFSDuplicateSPN
 
-                It "should not run because domain was not found" {
-                    # Arrange
-                    Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_upnServiceAccount; "Name" = $adfsServiceName } }
-                    Mock -CommandName TryGetDomainNameFromUpn -MockWith { return $null }
-    
-                    # Act
-                    $ret = TestADFSDuplicateSPN
-    
-                    # Assert
-                    $ret.Result | should -BeExactly NotRun
-                    $ret.Detail | should -BeExactly "Unable to find user object in AD for the service account $_upnServiceAccount."
-                    $ret.output.ServiceAccount | should -BeExactly $_upnServiceAccount
-                }
+                # Assert
+                $ret.Result | should -beexactly Fail
+                $ret.Detail | should -BeLike "*No objects in the directory with SPN $_farmSPN were found.*"
+                $ret.output.ServiceAccount | should beexactly $_samServiceAccount                
+                $ret.output.ServiceAccountName = "aadcsvc";
+                $ret.output.ServiceAccountDomain = "contoso";                      
+                $ret.output.ServiceAccountFoundInAD = $null; 
+            }
+            
+            It "should fail because the SPN was not found and the user account does not have the correct SPN" {
+                # Arrange 
+                Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_samServiceAccount; "Name" = $adfsServiceName } }
+                $_badAdObject = New-Object PSObject -Property @{ "distinguishedname" = $_fullPath; "objectguid" = $_objectGUID; "serviceprincipalname" = $null }
+                Mock -CommandName GetObjectsFromAD -MockWith { return $null } -ParameterFilter { $filter -eq "(servicePrincipalName=$_farmSPN)" }                
+                Mock -CommandName GetObjectsFromAD -MockWith { return New-Object PSObject -Property @{ "Properties" = $_badAdObject; "Count" = 1 } } -ParameterFilter { $filter -eq "(samAccountName=aadcsvc)"}
+
+                # Act
+                $ret = TestADFSDuplicateSPN
+
+                # Assert
+                $ret.Result | should -beexactly Fail
+                $ret.Detail | should -BeLike "*No objects in the directory with SPN $_farmSPN were found.*"
+                $ret.output.ServiceAccount | should beexactly $_samServiceAccount             
+                $ret.output.ServiceAccountName = "aadcsvc";
+                $ret.output.ServiceAccountDomain = "contoso";                      
+                $ret.output.ServiceAccountFoundInAD = $_fullPath;      
+                $ret.output.ServiceAccountSpn = $null;
             }
         }
+
+        Context "should notrun"{                
+            BeforeAll {
+                Mock -CommandName Test-RunningOnAdfsSecondaryServer -MockWith { return $false }
+                Mock -CommandName IsLocalUser -MockWith { return $false }
+                Mock -CommandName IsAdfsServiceRunning -MockWith { return $true }
+                Mock -CommandName Retrieve-AdfsProperties -MockWith { return New-Object PSObject -Property @{ "Hostname" = $_hostname}}
+            }
+
+            It "should not run because domain was not found" {
+                # Arrange
+                Mock -CommandName Get-WmiObject -MockWith { return New-Object PSObject -Property @{ "StartName" = $_upnServiceAccount; "Name" = $adfsServiceName } }
+                Mock -CommandName TryGetDomainNameFromUpn -MockWith { return $null }
+
+                # Act
+                $ret = TestADFSDuplicateSPN
+
+                # Assert
+                $ret.Result | should -BeExactly NotRun
+                $ret.Detail | should -BeExactly "Unable to find user object in AD for the service account $_upnServiceAccount."
+                $ret.output.ServiceAccount | should -BeExactly $_upnServiceAccount
+            }
+        }        
     }
 
     Describe "TestServicePrincipalName" {
