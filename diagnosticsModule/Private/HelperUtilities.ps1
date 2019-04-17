@@ -355,9 +355,9 @@ Function GetObjectsFromAD ($domain, $filter, [switch] $GlobalCatalog)
         }
 
         $searcher.SearchScope = "SubTree"
-        $Prop = $searcher.PropertiestoLoad.Add("distinguishedName")
-        $Prop = $searcher.PropertiestoLoad.Add("objectGuid")
-        $Prop = $searcher.PropertiestoLoad.Add("servicePrincipalName")
+        $props = $searcher.PropertiestoLoad.Add("distinguishedName")
+        $props = $searcher.PropertiestoLoad.Add("objectGuid")
+        $props = $searcher.PropertiestoLoad.Add("servicePrincipalName")
         $searcher.Filter = $filter
         $searchResults = $searcher.FindAll()
 
