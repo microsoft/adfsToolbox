@@ -4,7 +4,7 @@
 
 ### Important changes
 
-As of 7/31/2019, we have migrated diagnosticsModule from PowerShell to C# in a new repository. This indirectly required us to make the new repository private. If you feel that we should invest the time to make the new repository open source, please direct your feedback to [Feedback](https://adfshelp.microsoft.com/Feedback/ProvideFeedback) or open an issue here.
+As of 7/31/2019, we have migrated diagnosticsModule from PowerShell to C# in a new repository. This indirectly required us to make the new repository private. If you feel that we should invest the time to make the new repository open source, please direct your feedback to [Feedback](https://adfshelp.microsoft.com/Feedback/ProvideFeedback) or respond to the issue [here](https://github.com/microsoft/adfsToolbox/issues/75).
 
 Additionally, the diagnostics module will no longer support AD FS 2.1 or lower. If you need to target AD FS versions 2.1 or lower please install version 1.0.13 of ADFSToolbox.
 
