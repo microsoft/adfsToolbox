@@ -1,5 +1,13 @@
 # AD FS Toolbox
 
+## Notice: This repository is no longer being actively maintained.
+
+### Details
+
+As of 7/31/2019, we have migrated the diagnosticsModule from PowerShell to C# into a new repository. As a consequence of this change, the new repository is not publically available. If you feel that we should invest the time to make the new repository open source, please direct your feedback to [here](https://adfshelp.microsoft.com/Feedback/ProvideFeedback) or respond to the issue [here](https://github.com/microsoft/adfsToolbox/issues/75). This repository will remain public, but will not be actively maintained. 
+ 
+## Notice: Additionally, the diagnostics module will no longer support AD FS 2.1 or lower. If you need to target AD FS versions 2.1 or lower please install version 1.0.13 of ADFSToolbox.
+
 ## Overview
 
 This repository contains tools for helping you manage your AD FS farm. The following tools are currently included:
@@ -14,7 +22,7 @@ This repository contains tools for helping you manage your AD FS farm. The follo
 
 ## Getting Started
 
-### Install through PowerShell Gallery (Recommended)
+### Install through PowerShell Gallery (Recommended) for AD FS 3.0
 
 1. Install the PowerShell Module
 
@@ -31,17 +39,49 @@ This repository contains tools for helping you manage your AD FS farm. The follo
 3. Run the cmdlet of your choice, with the required parameters (see individual tools for details)
 
 
-### Install manually
+### Install manually for AD FS 3.0
 
-1. [Download the repository](https://github.com/Microsoft/adfsToolbox/zipball/master)
-2. Unzip the download and copy `ADFSToolbox` folder to `%SYSTEMDRIVE%:\Program Files\WindowsPowerShell\Modules\`
-3. Import the PowerShell Module
+1. Launch an elevated PowerShell window on a machine that has internet access.
+2. Install the PowerShell Module
+
+    `Install-Module -Name ADFSToolbox -Force`
+
+3. Copy the ADFSToolbox folder located `%SYSTEMDRIVE%\Program Files\WindowsPowerShell\Modules\` on your local machine to the same location on your AD FS or WAP machine.
+
+4. Launch an elevated PowerShell window on your AD FS machine and run the following cmdlet to import the module.
+
+    `Import-Module -Name ADFSToolbox -Force`
+
+### Install through PowerShell Gallery (Recommended) for AD FS 2.1 or lower
+
+1. Install the PowerShell Module
 
     In a PowerShell window, run the following:
 
-    `Import-Module ADFSToolbox -Force`
+    `Install-Module -Name ADFSToolbox -RequiredVersion 1.0.13 -Force`
 
-4. Run the cmdlet of your choice, with the required parameters (see individual tools for details)
+2. Import the PowerShell Module
+
+    In a PowerShell window, run the following:
+
+    `Import-Module ADFSToolbox -RequiredVersion 1.0.13 -Force`
+
+3. Run the cmdlet of your choice, with the required parameters (see individual tools for details)
+
+
+### Install manually for AD FS 2.1 or lower
+
+1. Launch an elevated PowerShell window on a machine that has internet access.
+2. Install the PowerShell Module
+
+    `Install-Module -Name ADFSToolbox -RequiredVersion 1.0.13 -Force`
+
+3. Copy the ADFSToolbox folder located `%SYSTEMDRIVE%\Program Files\WindowsPowerShell\Modules\` on your local machine to the same location on your AD FS or WAP machine.
+
+4. Launch an elevated PowerShell window on your AD FS machine and run the following cmdlet to import the module.
+
+    `Import-Module -Name ADFSToolbox -RequiredVersion 1.0.13 -Force`
+
 
 ## Contributing
 
