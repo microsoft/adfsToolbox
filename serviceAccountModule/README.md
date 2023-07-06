@@ -32,13 +32,13 @@ The module exposes the following cmdlets:
 
 ## Getting Started
 
-1. Download the `ServiceAccount.psm1` module to all of your AD FS servers (primary and secondary)
+1. Download the `AdfsServiceAccountModule.psm1` module to all of your AD FS servers (primary and secondary)
 
 2. Import the PowerShell Module on all servers
 
-    In a PowerShell window, run the following:
+    In a PowerShell window, run the following (adjust the module path accordingly):
 
-    ```ipmo ServiceAccount.psm1```
+    ```ipmo .\AdfsServiceAccountModule.psm1```
 
 3. For Windows Server 2016 and later, add a rule granting the new service account necessary permissions.
 
